@@ -59,7 +59,7 @@ $( document ).ready(function() {
 		}
 		
 		// Create the scale for the vote count colors
-		scale = chroma.scale(HEAT_MAP_COLORS).domain([min_count, max_count], voting_options.length, 'log').out('hex');
+		scale = chroma.scale(HEAT_MAP_COLORS).domain([min_count, max_count], voting_options.length).out('hex');
 		$(element_id).find("span.badge").each(function(index) {
 			// update the voting count of the corresponding option index
 			$(this).text(voting_options[index]['count']);

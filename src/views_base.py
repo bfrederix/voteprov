@@ -7,7 +7,7 @@ import webapp2
 from webapp2_extras import sessions
 from google.appengine.api import users
 
-from service import show_today, get_current_show
+from service import (get_current_show, get_current_suggestion_pools)
 from timezone import get_mountain_time
 
 LIVE_VOTE_URI = '/live_vote/'
@@ -39,6 +39,7 @@ class ViewBase(webapp2.RequestHandler):
         else:
             auth_url = users.create_login_url(self.request.uri)
             auth_action = 'Login'
+        current_show = get_current_show()
         self.context = {
                     'host_domain': self.request.host_url.replace('http://', ''),
                     'image_path': self.app.registry.get('images'),
@@ -51,8 +52,9 @@ class ViewBase(webapp2.RequestHandler):
                     'auth_url': auth_url,
                     'auth_action': auth_action,
                     'path_qs': self.request.path_qs,
-                    'show_today': show_today(),
-                    'current_show': get_current_show()}
+                    'current_show': current_show,
+                    'show_today': bool(current_show),
+                    'current_suggestion_pools': get_current_suggestion_pools(current_show)}
     
     def add_context(self, add_context={}):
         self.context.update(add_context)

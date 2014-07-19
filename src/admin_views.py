@@ -10,7 +10,8 @@ from google.appengine.api import users
 from views_base import ViewBase, get_or_default
 
 from service import (get_current_show, get_suggestion, get_player, get_show,
-                     get_vote_type, fetch_suggestions, get_suggestion_pool,
+                     get_vote_type, get_voted_item,
+                     fetch_suggestions, get_suggestion_pool,
                      fetch_players, fetch_preshow_votes, fetch_vote_options,
                      fetch_shows, fetch_live_votes, fetch_suggestion_pools,
                      fetch_vote_types, fetch_voted_items, fetch_show_intervals,
@@ -67,6 +68,10 @@ class ShowPage(ViewBase):
                 fetch_vote_options(vote_type=vote_type.key,
                                    show=show.key,
                                    delete=True)
+                # Delete the current voted item
+                get_voted_item(vote_type=vote_type.key,
+                               show=show.key,
+                               delete=True)
             # Save the show and vote type's new current state
             vote_type.put()
             show.put()                
@@ -109,7 +114,7 @@ class CreateShow(ViewBase):
             players = []
             # Get the players for the show
             for player in player_list:
-                player_key = get_player(key_id=player).key
+                player_key = get_player(key_id=player, key_only=True)
                 players.append(player_key)
             show = create_show({'players': players,
                                 'player_pool': players}).get()
@@ -175,13 +180,14 @@ class VoteTypes(ViewBase):
         # Delete selected vote types
         if vote_type_ids:
             for vote_type_id in vote_type_ids:
-                vote_type_entity = get_vote_type(key_id=vote_type_id)
-                vote_type_entity.key.delete()
+                vote_type_key = get_vote_type(key_id=vote_type_id, key_only=True)
+                vote_type_key.delete()
             action = 'deleted'
         # Create Suggestion pool
         elif self.request.get('name'):
             suggestion_pool_id = self.request.get('suggestion_pool_id')
-            suggestion_pool = get_suggestion_pool(key_id=suggestion_pool_id)
+            suggestion_pool_key = get_suggestion_pool(key_id=suggestion_pool_id,
+                                                      key_only=True)
             intervals_string = self.request.get('interval_list')
             # Parse the intervals, if there are any
             if intervals_string:
@@ -195,7 +201,7 @@ class VoteTypes(ViewBase):
             # Create the vote type
             create_vote_type({'name': self.request.get('name'),
                               'display_name': self.request.get('display_name'),
-                              'suggestion_pool': suggestion_pool.key,
+                              'suggestion_pool': suggestion_pool_key,
                               'preshow_voted': bool(self.request.get('preshow_voted', False)),
                               'has_intervals': bool(self.request.get('has_intervals', False)),
                               'style': self.request.get('style'),
@@ -228,8 +234,9 @@ class SuggestionPools(ViewBase):
         # Delete selected suggestion pools
         if suggestion_pool_ids:
             for suggestion_pool_id in suggestion_pool_ids:
-                suggestion_pool_entity = get_suggestion_pool(key_id=suggestion_pool_id)
-                suggestion_pool_entity.key.delete()
+                suggestion_pool_key = get_suggestion_pool(key_id=suggestion_pool_id,
+                                                          key_only=True)
+                suggestion_pool_key.delete()
             action = 'deleted'
         # Create Suggestion pool
         elif self.request.get('name'):
@@ -273,32 +280,32 @@ class DeleteTools(ViewBase):
         # If show(s) were deleted
         if show_list:
             for show in show_list:
-                show_entity = get_show(key_id=show)
+                show_key = get_show(key_id=show, key_only=True)
                 # Delete the Vote Options attached to the show
-                vote_options = fetch_vote_options(show=show_entity.key)
+                vote_options = fetch_vote_options(show=show_key)
                 for vote_option in vote_options:
                     vote_option.key.delete()
                 # Delete the Suggestions used in the show
-                suggestions = fetch_suggestions(show=show_entity.key)
+                suggestions = fetch_suggestions(show=show_key)
                 for suggestion in suggestions:
                     suggestion.key.delete()
                 # Delete the Preshow Votes used in the show
-                preshow_votes = fetch_preshow_votes(show=show_entity.key)
+                preshow_votes = fetch_preshow_votes(show=show_key)
                 for preshow_vote in preshow_votes:
                     preshow_votes.key.delete()
                 # Delete the Live Votes used in the show
-                live_votes = fetch_live_votes(show=show_entity.key)
+                live_votes = fetch_live_votes(show=show_key)
                 for live_vote in live_votes:
                     live_vote.key.delete()
                 # Delete the Voted Items used in the show
-                voted_items = fetch_voted_items(show=show_entity.key)
+                voted_items = fetch_voted_items(show=show_key)
                 for voted_item in voted_items:
                     voted_item.key.delete()
                 # Delete the Show Player Interval used in the show
-                show_intervals = fetch_show_intervals(show=show_entity.key)
+                show_intervals = fetch_show_intervals(show=show_key)
                 for show_interval in show_intervals:
                     show_interval.key.delete()
-                show_entity.key.delete()
+                show_key.delete()
                 deleted = 'Show(s)'
         # Delete ALL un-used things
         if delete_unused:
@@ -385,8 +392,9 @@ class JSTestPage(ViewBase):
                            {'photo_filename': 'greg.jpg', 'count': 5}]
         show_mock = type('Show',
                          (object,),
-                         dict(is_today = True))
-        mock_data = {'state': state, 'display': display}
+                         dict(is_today = True,
+                              vote_types=fetch_vote_types()))
+        mock_data = {'state': state, 'display': display, 'style': style}
         if style == 'player-options':
             if display == 'voting':
                 mock_data.update({'player_name': 'Freddy',
@@ -406,7 +414,7 @@ class JSTestPage(ViewBase):
                 				  'value': five_options[1]['value'],
                                   'count': five_options[1]['count']})
         elif style == 'options' or style == 'preshow-voted':
-            if display == 'voting':
+            if display == 'voting' and not style == 'preshow-voted':
                 mock_data.update({'options': five_options})
             else:
                 mock_data.update({'voted': state,
@@ -419,6 +427,7 @@ class JSTestPage(ViewBase):
                                   'options': player_options[:player_num]})
             else:
                 mock_data.update({'voted': state,
+                                  'display_name': state.capitalize(),
                                   'photo_filename': player_options[0]['photo_filename'],
                                   'count': player_options[0]['count']})
         

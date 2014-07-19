@@ -119,7 +119,7 @@ class VoteType(ndb.Model):
     
     def current_voted_item(self, show):
         return VotedItem.query(VotedItem.vote_type == self.key,
-                               VotedItem.vote_type == show,
+                               VotedItem.show == show,
                                VotedItem.interval == self.current_interval).get()
     
     def get_randomized_unused_suggestions(self, show, interval=None):
@@ -174,8 +174,8 @@ class VoteType(ndb.Model):
             self.suggestion_pool.get().delete_all_suggestions_and_live_votes
             test_options = ["I'm JAZZED! Start the show already!",
                             "I'm definitely excited.",
-                            "I didn't actually read anything. I just pressed a button.",
                             "This seems... interesting...",
+                            "I didn't actually read anything. I just pressed a button.",
                             "If you see me sleeping in the audience, try to keep it down."]
             vote_option_list = []
             for i in range(0, self.options):
@@ -220,7 +220,7 @@ class Show(ndb.Model):
     
     @property
     def show_option_list(self):
-        return range(1, self.vote_options+1)
+        return range(0, self.vote_options)
     
     def get_player_by_interval(self, interval, vote_type):
         return ShowInterval.query(ShowInterval.show == self.key,
@@ -386,7 +386,7 @@ class Show(ndb.Model):
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
                                               player=winning_player,
-                                              interval=current_interval).put()
+                                              interval=current_interval).put().get()
                     # Append it to the list of voted items for the show
                     show.voted_items.append(current_voted.key.id())
                     show.put()
@@ -419,7 +419,7 @@ class Show(ndb.Model):
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
                                               player=winning_player,
-                                              interval=current_interval).put()
+                                              interval=current_interval).put().get()
                     # Append it to the list of current voted items for the show
                     show.voted_items.append(current_voted.key.id())
                     # Pop the player out of the show's player pool
@@ -458,9 +458,9 @@ class Show(ndb.Model):
                     # Create the current voted
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
-                                              player=current_player,
-                                              suggestion=winning_suggestion,
-                                              interval=current_interval).put()
+                                              player=current_player.key,
+                                              suggestion=winning_suggestion.key,
+                                              interval=current_interval).put().get()
                     # Append it to the list of current voted items for the show
                     show.voted_items.append(current_voted.key.id())
                     # Mark the suggestion as used
@@ -496,8 +496,8 @@ class Show(ndb.Model):
                     # Create the current voted
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
-                                              suggestion=winning_suggestion,
-                                              interval=current_interval).put()
+                                              suggestion=winning_suggestion.key,
+                                              interval=current_interval).put().get()
                     # Append it to the list of current voted items for the show
                     show.voted_items.append(current_voted.key.id())
                     # Mark the suggestion as used
@@ -521,7 +521,7 @@ class Show(ndb.Model):
                     winning_suggestion = None
                     for suggestion in suggestions:
                         count = vote_type.get_live_vote_count(self.key,
-                                                              suggestion=suggestion)
+                                                              suggestion=suggestion.key)
                         # Compare which suggestion has the highest votes
                         if count >= winning_count:
                             # Set the new winning suggestion/count
@@ -530,16 +530,12 @@ class Show(ndb.Model):
                     # Create the current voted
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
-                                              suggestion=winning_suggestion).put()
+                                              suggestion=winning_suggestion.key).put().get()
                     # Mark the suggestion as used
                     winning_suggestion.used = True
                     winning_suggestion.put()
-                    show.put()
                 # The winning suggestion has already been selected
                 else:
-                    # Get the stored interval options
-                    vote_options = VoteOptions.query(VoteOptions.vote_type == self.key,
-                                                     VoteOptions.show == show).delete()
                     current_voted = vote_type.current_voted_item(self.key)
                     winning_count = vote_type.get_live_vote_count(self.key,
                                                                   suggestion=current_voted.suggestion)
@@ -557,8 +553,8 @@ class Show(ndb.Model):
                     # Create the current voted
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
-                                              suggestion=winning_suggestion,
-                                              interval=current_interval).put()
+                                              suggestion=winning_suggestion.key,
+                                              interval=current_interval).put().get()
                     # Append it to the list of current voted items for the show
                     show.voted_items.append(current_voted.key.id())
                     # Mark the suggestion as used

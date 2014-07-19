@@ -36,8 +36,16 @@
 				  <ul class="nav navbar-nav">
 					<li {% block home-selected %}{% endblock %}><a href="/">Home</a></li>
 					{% if show_today %}{% if is_admin %}<li><a href="/show/{{current_show.key.id}}/"><strong>Show Admin</strong></a></li>{% else %}<li {% block live-vote-selected %}{% endblock %}><a href="/live_vote/"><strong>Live Vote!</strong></a></li>{% endif %}{% endif %}
-					{% if show_today %}<li {% block add-action-selected %}{% endblock %}><a href="/add_actions/"><strong>Actions</strong> Add/Vote</a></li>{% endif %}
-					{% if not show_today %}<li {% block add-theme-selected %}{% endblock %}><a href="/add_themes/"><strong>Themes</strong> Add/Vote</a></li>{% endif %}
+					<li class="dropdown{% block suggestions-selected %}{% endblock %}">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            Suggestions <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            {% for pool in current_suggestion_pools %}
+                                <li><a href="/suggestions/{{pool.name}}/"><strong>{{pool.display_name}}</strong> Add/Vote</a></li>
+                            {% endfor %}
+                        </ul>
+    				</li>
 					{% if is_admin %}
 						<li class="dropdown{% block admin-selected %}{% endblock %}">
     						<a class="dropdown-toggle" data-toggle="dropdown" href="#">

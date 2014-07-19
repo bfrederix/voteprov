@@ -6,14 +6,6 @@ from models import (Show, Player, VoteType, Suggestion, PreshowVote,
 from timezone import (get_today_start, get_tomorrow_start)
 
 
-def show_today():
-    # See if there is a show today, otherwise users aren't allowed to submit actions
-    today_start = get_today_start()
-    tomorrow_start = get_tomorrow_start()
-    return bool(Show.query(Show.created >= today_start,
-                           Show.created < tomorrow_start).get())
-
-
 def get_show(**kwargs):
     return get_model_entity(Show, **kwargs)
 
@@ -32,14 +24,36 @@ def get_suggestion(**kwargs):
 def get_suggestion_pool(**kwargs):
     return get_model_entity(SuggestionPool, **kwargs)
 
-def get_model_entity(model, key_id=None, name=None):
+def get_voted_item(**kwargs):
+    return get_model_entity(VotedItem, **kwargs)
+
+def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False,
+                     show=None, vote_type=None):
     # If key id is given, just return the key
     if key_id:
-        return ndb.Key(model, int(key_id)).get()
+        key = ndb.Key(model, int(key_id))
+        # Return just the key
+        if key_only == True:
+            return key
+        # If a key was found, return the entity
+        elif key:
+            return key.get()
+        # Otherwise, return nothing
+        else:
+            return None
     args = []
     if name:
         args.append(model.name == name)
-    return model.query(*args).get()
+    if show:
+        args.append(model.show == show)
+    if vote_type:
+        args.append(model.vote_type == vote_type)
+    item_entity = model.query(*args).get()
+    # If we should delete the item
+    if delete:
+        item_entity.key.delete()
+        return
+    return item_entity
 
 
 def fetch_shows(**kwargs):
@@ -58,7 +72,16 @@ def fetch_vote_types(**kwargs):
     return fetch_model_entities(VoteType, **kwargs)
 
 def fetch_suggestion_pools(**kwargs):
-    return fetch_model_entities(SuggestionPool, **kwargs)
+    # Get SuggestionPool's that are used before the show
+    if kwargs.get('occurs'):
+        suggestion_pools = []
+        vts = VoteType.query(VoteType.occurs == kwargs.get('occurs'),
+                             VoteType.name != 'test').fetch()
+        for vt in vts:
+            suggestion_pools.append(vt.suggestion_pool.get())
+        return suggestion_pools
+    else:
+        return fetch_model_entities(SuggestionPool, **kwargs)
 
 def fetch_preshow_votes(**kwargs):
     return fetch_model_entities(PreshowVote, **kwargs)
@@ -245,3 +268,19 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
     context['suggestions'] = suggestion_entities
     
     return context
+
+
+def get_current_suggestion_pools(current_show):
+    if current_show:
+        suggestion_pools = fetch_suggestion_pools(occurs='during')
+    else:
+        # Fetch before show creation pools
+        suggestion_pools = fetch_suggestion_pools(occurs='before')
+    return suggestion_pools
+
+
+def get_suggestion_pool_page_suggestions(suggestion_pool):
+    return Suggestion.query(Suggestion.suggestion_pool == suggestion_pool,
+                            Suggestion.used == False,
+                                ).order(-Suggestion.preshow_value,
+                                        Suggestion.created).fetch()

@@ -9,3 +9,16 @@ indexes:
 # manually, move them above the marker line.  The index.yaml file is
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
+
+- kind: Suggestion
+  properties:
+  - name: suggestion_pool
+  - name: used
+  - name: preshow_value
+    direction: desc
+  - name: created
+
+- kind: VoteType
+  properties:
+  - name: occurs
+  - name: name
