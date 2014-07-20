@@ -2,11 +2,12 @@
 
 <script>
 $( document ).ready(function() {
+    var item_alert = $('#item-alert');
     // Stick the new item alert to the top, and hide it
-    $('#item-alert').sticky({topSpacing:0});
-    $('#item-alert').width($('#item-alert').parent().width());
-    $('#item-alert').hide();
-    var vote_ajax_url = "/upvote_json/";
+    $(item_alert).sticky({topSpacing:0});
+    $(item_alert).width($(item_alert).parent().width());
+    $(item_alert).hide();
+    var vote_ajax_url = "/upvote_json/{{current_suggestion_pool.name}}/";
     $(".upvote").click(function() {
         // Disable the upvote button
         $( this ).prop('disabled', true);
@@ -24,14 +25,14 @@ $( document ).ready(function() {
         );
     });
     
-    (function action_refresh(){
+    (function voting_refresh(){
         setTimeout(function(){
 			   $.ajax({
 				   url: vote_ajax_url,
 				   error: function(voting_data){
 				       console.log("Voting data fetching error!");
                        console.log(voting_data);
-                       action_refresh(); // recurse
+                       voting_refresh(); // recurse
 				   },
 				   success: function(voting_data){
 				       var item_count = voting_data['item_count'];
@@ -40,14 +41,14 @@ $( document ).ready(function() {
 				           var count_diff = item_count - {{item_count}};
                            $('#item-count').html(count_diff + "&nbsp;");
                            // Show the sticky alert
-                           $('#item-alert').slideDown();
+                           $(item_alert).slideDown();
                            // Hide the overlapping "Add Object"
                            $(".underlay-object").html("&nbsp;");
 				       }
-                       action_refresh(); // recurse
+                       voting_refresh(); // recurse
                    }
                 });
-        }, 10000);
+        }, 15000);
     })();
 });
 </script>

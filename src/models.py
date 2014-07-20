@@ -134,7 +134,7 @@ class VoteType(ndb.Model):
             unused_suggestion_keys = Suggestion.query(
                                          Suggestion.suggestion_pool == self.suggestion_pool,
                                          Suggestion.used == False,
-                                             ).order(-Suggestion.vote_value,
+                                             ).order(-Suggestion.preshow_value,
                                                      Suggestion.created
                                                         ).fetch(self.randomize_amount,
                                                                 keys_only=True)
@@ -216,7 +216,6 @@ class Show(ndb.Model):
     recap_init = ndb.DateTimeProperty(indexed=False)
     locked = ndb.BooleanProperty(default=False, indexed=False)
     showing_leaderboard = ndb.BooleanProperty(default=False, indexed=False)
-    voted_items = ndb.IntegerProperty(repeated=True, indexed=False)
     
     @property
     def show_option_list(self):
@@ -229,11 +228,25 @@ class Show(ndb.Model):
 
     @property
     def is_today(self):
-        return self.created.date() == get_mountain_time().date()    
+        return self.created.date() == get_mountain_time().date()
+    
+    @property
+    def used_types_names(self):
+        used_types = []
+        voted_items = VotedItem.query(VotedItem.show == self.key).fetch()
+        # Create a list of the used vote types
+        for voted_item in voted_items:
+            vote_type = voted_item.vote_type.get()
+            # If the vote type has been used (and is not an interval)
+            if not vote_type.has_intervals and vote_type.name != 'test':
+                used_types.append(vote_type.name)
+        return used_types
     
     @property
     def current_vote_state(self):
-        state_dict = {'state': 'default', 'display': 'default', 'used_types': []}
+        state_dict = {'state': 'default',
+                      'display': 'default',
+                      'used_types': self.used_types_names}
         # If any vote has started, get the vote type
         if self.current_vote_type:
             vote_type = self.current_vote_type.get()
@@ -283,24 +296,20 @@ class Show(ndb.Model):
                                    'display': 'result',
                                    'style': vote_type.style,
                                    'display_name': vote_type.display_name,
+                                   'recap': True,
                                    'hour': display_end.hour,
                                    'minute': display_end.minute,
                                    'second': display_end.second})
         
-        # Get the list of already voted items
-        for vi_id in self.voted_items:
-            voted_item_entity = ndb.Key(VotedItem, int(vi_id)).get()
-            vote_type = voted_item_entity.vote_type.get()
-            # If the vote type has been used (and is not an interval)
-            if not vote_type.has_intervals:
-                state_dict['used_types'].append(vote_type.name)
-                    
         return state_dict
 
     def current_vote_options(self, voting_only=False):
         vote_options = self.current_vote_state.copy()
+        # If we're in a recap
+        if vote_options.get('recap'):
+            vote_type = self.recap_type.get()
         # If any vote has started, get the vote type and figure out what state we're in
-        if self.current_vote_type:
+        elif self.current_vote_type:
             vote_type = self.current_vote_type.get()
         # Just return the default state
         else:
@@ -326,8 +335,8 @@ class Show(ndb.Model):
                     count = vote_type.get_live_vote_count(self.key,
                                                           player=player,
                                                           interval=current_interval)
-                    player_dict = {'photo_filename': player.photo_filename,
-                                   'id': player.key.id(),
+                    player_dict = {'photo_filename': player.get().photo_filename,
+                                   'id': player.id(),
                                    'count': count}
                     vote_options['options'].append(player_dict)
             elif vote_type.style == 'player-options':
@@ -349,7 +358,7 @@ class Show(ndb.Model):
                                                                                  interval=current_interval)
                 for unused_suggestion in unused_suggestions:
                     count = vote_type.get_live_vote_count(self.key,
-                                                          suggestion=unused_suggestion,
+                                                          suggestion=unused_suggestion.key,
                                                           interval=current_interval)
                     vote_options['options'].append({'value': unused_suggestion.value,
                                                     'id': unused_suggestion.key.id(),
@@ -387,9 +396,6 @@ class Show(ndb.Model):
                                               show=self.key,
                                               player=winning_player,
                                               interval=current_interval).put().get()
-                    # Append it to the list of voted items for the show
-                    show.voted_items.append(current_voted.key.id())
-                    show.put()
                 # The winning player has already been selected
                 else:
                     current_voted = vote_type.current_voted_item(self.key)
@@ -420,14 +426,12 @@ class Show(ndb.Model):
                                               show=self.key,
                                               player=winning_player,
                                               interval=current_interval).put().get()
-                    # Append it to the list of current voted items for the show
-                    show.voted_items.append(current_voted.key.id())
                     # Pop the player out of the show's player pool
                     for player in list(self.player_pool):
                         if player == winning_player:
                             # Remove the winning player
                             self.player_pool.remove(player)
-                    show.put()
+                    self.put()
                 # The winning player has already been selected
                 else:
                     current_voted = vote_type.current_voted_item(self.key)
@@ -448,7 +452,7 @@ class Show(ndb.Model):
                     winning_suggestion = None
                     for unused_suggestion in unused_suggestions:
                         count = vote_type.get_live_vote_count(self.key,
-                                                              suggestion=unused_suggestion,
+                                                              suggestion=unused_suggestion.key,
                                                               interval=current_interval)
                         # Compare which suggestion has the highest votes
                         if count >= winning_count:
@@ -461,12 +465,9 @@ class Show(ndb.Model):
                                               player=current_player.key,
                                               suggestion=winning_suggestion.key,
                                               interval=current_interval).put().get()
-                    # Append it to the list of current voted items for the show
-                    show.voted_items.append(current_voted.key.id())
                     # Mark the suggestion as used
                     winning_suggestion.used = True
                     winning_suggestion.put()
-                    show.put()
                 # The winning suggestion has already been selected
                 else:
                     current_voted = vote_type.current_voted_item(self.key)
@@ -486,7 +487,7 @@ class Show(ndb.Model):
                     winning_suggestion = None
                     for unused_suggestion in unused_suggestions:
                         count = vote_type.get_live_vote_count(self.key,
-                                                              suggestion=unused_suggestion,
+                                                              suggestion=unused_suggestion.key,
                                                               interval=current_interval)
                         # Compare which suggestion has the highest votes
                         if count >= winning_count:
@@ -498,12 +499,9 @@ class Show(ndb.Model):
                                               show=self.key,
                                               suggestion=winning_suggestion.key,
                                               interval=current_interval).put().get()
-                    # Append it to the list of current voted items for the show
-                    show.voted_items.append(current_voted.key.id())
                     # Mark the suggestion as used
                     winning_suggestion.used = True
                     winning_suggestion.put()
-                    show.put()
                 # The winning suggestion has already been selected
                 else:
                     current_voted = vote_type.current_voted_item(self.key)
@@ -555,12 +553,9 @@ class Show(ndb.Model):
                                               show=self.key,
                                               suggestion=winning_suggestion.key,
                                               interval=current_interval).put().get()
-                    # Append it to the list of current voted items for the show
-                    show.voted_items.append(current_voted.key.id())
                     # Mark the suggestion as used
                     winning_suggestion.used = True
                     winning_suggestion.put()
-                    show.put()
                 # The winning suggestion has already been selected
                 else:
                     current_voted = vote_type.current_voted_item(self.key)
@@ -569,7 +564,6 @@ class Show(ndb.Model):
                 vote_options['voted'] = vote_type.name
                 vote_options['value'] = current_voted.suggestion.get().value
                 vote_options['count'] = winning_count
-        
         return vote_options
     
     def put(self, *args, **kwargs):
@@ -584,11 +578,11 @@ class Suggestion(ndb.Model):
     suggestion_pool = ndb.KeyProperty(kind=SuggestionPool, required=True)
     used = ndb.BooleanProperty(default=False)
     voted_on = ndb.BooleanProperty(default=False)
-    value = ndb.StringProperty(required=True, indexed=False)
+    value = ndb.StringProperty(required=True)
     # Pre-show upvotes
     preshow_value = ndb.IntegerProperty(default=0)
     session_id = ndb.StringProperty(required=True)
-    user = ndb.UserProperty(default=None)
+    user_id = ndb.StringProperty(default=None)
     
     created = ndb.DateTimeProperty()
     
@@ -617,7 +611,14 @@ class PreshowVote(ndb.Model):
     show = ndb.KeyProperty(kind=Show)
     suggestion = ndb.KeyProperty(kind=Suggestion, required=True)
     session_id = ndb.StringProperty(required=True)
-    user = ndb.UserProperty(default=None)
+
+    def put(self, *args, **kwargs):
+        """Increment the Suggestion's pre-show value"""
+        if self.suggestion:
+            suggestion_entity = self.suggestion.get()
+            suggestion_entity.preshow_value += 1
+            suggestion_entity.put()
+        return super(PreshowVote, self).put(*args, **kwargs)
 
 
 class LiveVote(ndb.Model):
@@ -627,14 +628,16 @@ class LiveVote(ndb.Model):
     suggestion = ndb.KeyProperty(kind=Suggestion)
     interval = ndb.IntegerProperty()
     session_id = ndb.StringProperty(required=True)
-    user = ndb.UserProperty(default=None)
+    user_id = ndb.StringProperty(default=None)
     
     def put(self, *args, **kwargs):
         """Increment the Suggestion's live value"""
         if self.suggestion:
             suggestion_entity = self.suggestion.get()
-            suggestion_entity.voted_on = True
-            suggestion_entity.put()
+            # If the live vote included a suggestion
+            if suggestion_entity:
+                suggestion_entity.voted_on = True
+                suggestion_entity.put()
         return super(LiveVote, self).put(*args, **kwargs)
 
 

@@ -4,13 +4,15 @@ import datetime
 from google.appengine.ext import ndb
 
 from views_base import ViewBase
-from models import (Show)
+from service import (get_show, get_suggestion_pool, get_suggestion,
+                     get_suggestion_pool_page_suggestions,
+                     create_preshow_vote)
 from timezone import get_mountain_time, back_to_tz
 
 
 class ShowJSON(ViewBase):
     def get(self, show_id):
-        show = ndb.Key(Show, int(show_id)).get()
+        show = get_show(key_id=show_id)
         vote_options = show.current_vote_options()
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps(vote_options))
@@ -19,7 +21,7 @@ class ShowJSON(ViewBase):
 class IntervalTimerJSON(ViewBase):
     def get(self, show_id):
         time_json = {}
-        show = ndb.Key(Show, int(show_id)).get()
+        show = get_show(key_id=show_id)
         interval_gap = show.get_interval_gap(show.current_interval)
         if interval_gap:
             # Set the end of this gap
@@ -34,31 +36,26 @@ class IntervalTimerJSON(ViewBase):
 
 
 class UpvoteJSON(ViewBase):
-    def get(self):
+    def get(self, suggestion_pool_name):
     	response_dict = {}
-    	if self.context.get('show_today'):
-    		response_dict['item_count'] = Action.query(Action.used == False).count()
-    	else:
-    		response_dict['item_count'] = Theme.query(Theme.used == False).count()
+    	current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
+    	response_dict['item_count'] = len(get_suggestion_pool_page_suggestions(
+                                              getattr(current_suggestion_pool, 'key', None)))
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps(response_dict))
     
-    def post(self):
+    def post(self, suggestion_pool_name):
     	# Get the posted data
     	posted_id = self.request.get('id', '')
     	session_id = self.request.get('session_id')
     	# Splits the id into type and item id
     	item_type, item_id = posted_id.split('-')
-    	if item_type == 'action':
-    		item = ndb.Key(Action, int(item_id)).get()
-    	else:
-    		item = ndb.Key(Theme, int(item_id)).get()
-        # See if the user already voted for this item
-        if not session_id in item.get_voted_sessions:
-        	# if the voted item was an action
-            if item_type == 'action':
-            	ActionVote(action=item.key, session_id=session_id).put()
-            else:
-            	ThemeVote(theme=item.key, session_id=session_id).put()
+    	suggestion = get_suggestion(key_id=item_id)
+        # See if the user already voted for this suggestion
+        if not session_id in suggestion.get_voted_sessions:
+        	# If not, create the pre-show vote
+            create_preshow_vote({'show': getattr(self.current_show, 'key', None),
+                                 'suggestion': suggestion.key,
+                                 'session_id': session_id})
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps({}))

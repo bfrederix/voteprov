@@ -39,7 +39,7 @@ class ViewBase(webapp2.RequestHandler):
         else:
             auth_url = users.create_login_url(self.request.uri)
             auth_action = 'Login'
-        current_show = get_current_show()
+        self.current_show = get_current_show()
         self.context = {
                     'host_domain': self.request.host_url.replace('http://', ''),
                     'image_path': self.app.registry.get('images'),
@@ -52,9 +52,9 @@ class ViewBase(webapp2.RequestHandler):
                     'auth_url': auth_url,
                     'auth_action': auth_action,
                     'path_qs': self.request.path_qs,
-                    'current_show': current_show,
-                    'show_today': bool(current_show),
-                    'current_suggestion_pools': get_current_suggestion_pools(current_show)}
+                    'current_show': self.current_show,
+                    'show_today': bool(self.current_show),
+                    'current_suggestion_pools': get_current_suggestion_pools(self.current_show)}
     
     def add_context(self, add_context={}):
         self.context.update(add_context)
@@ -78,6 +78,7 @@ class ViewBase(webapp2.RequestHandler):
             session['id'] = random.getrandbits(128)
         return session
   
+    @property
     def current_user(self):
         """Returns currently logged in user"""
         return users.get_current_user()

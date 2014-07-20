@@ -46,6 +46,10 @@ class LiveVote(ViewBase):
 
 class LiveVoteWorker(webapp2.RequestHandler):
     def post(self):
+        player_key = None
+        suggestion_key = None
+        interval = None
+        state = None
         # Get the current show
         show = get_current_show()
         vote_num = int(self.request.get('vote_num'))
@@ -58,23 +62,21 @@ class LiveVoteWorker(webapp2.RequestHandler):
                 voted_option = vote_data['options'][vote_num]
             except IndexError:
                 state = None
-        else:
-            state = None
         # Cast the interval to an int if it exists
         if vote_data.get('interval'):
             interval = int(vote_data.get('interval'))
-        else:
-            interval = None
         # Get the suggestion key, if it exist
         if voted_option.get('id'):
-            suggestion_key = get_suggestion(key_id=voted_option.get('id'), key_only=True)
-        else:
-            suggestion_key = None
+            # If this is a player vote
+            if show.current_vote_type \
+                and show.current_vote_type.get().style in ['player-pool', 'all-players']:
+                player_key = get_player(key_id=voted_option.get('id'), key_only=True)
+            # else this is a suggestion vote
+            else:
+                suggestion_key = get_suggestion(key_id=voted_option.get('id'), key_only=True)
         # Get the player key, if it exists
         if vote_data.get('player_id'):
             player_key = get_player(key_id=vote_data.get('player_id'), key_only=True)
-        else:
-            player_key = None
         # If there is a voting state of some kind
         if state and state != 'default':
             # Determine if a live vote exists for this already
@@ -116,18 +118,20 @@ class AddSuggestions(ViewBase):
 
     @redirect_locked
     def post(self, suggestion_pool_name):
-        # Get the current show
-        show = get_current_show()
+        if self.current_user:
+            user_id = self.current_user.user_id()
+        else:
+            user_id = None
         current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
-        context = pre_show_voting_post(show.key,
+        context = pre_show_voting_post(getattr(self.current_show, 'key', None),
                                        current_suggestion_pool,
                                        self.request,
                                        str(self.session.get('id', '0')),
-                                       self.current_user.user_id(),
+                                       user_id,
                                        self.context.get('is_admin', False))
 
         context.update({'current_suggestion_pool': current_suggestion_pool,
-                        'item_count': len(context.get(suggestion_pool.name, 0))})
+                        'item_count': len(context['suggestions'])})
         self.response.out.write(template.render(self.path('add_suggestions.html'),
                                                 self.add_context(context)))
 

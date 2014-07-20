@@ -4,7 +4,7 @@
 		<div class="row">
 			<div class="col-sm-11">
 				<h3 class="text-center" style="background-color:#003D7A;">
-					<a href="/" class="white-link">{{host_domain}}</a> - Tonight's Theme: {{show.theme.get.name}}
+					<a href="/" class="white-link">{{host_domain}}</a>{% if show.theme %} - Tonight's Theme: {{show.theme.get.name}}{% endif %}
 				</h3>
 			</div>
 		</div>
@@ -27,11 +27,11 @@
 			</form>
 			<hr/>
 			{% for vote_type in show.vote_types %}
-				<form id="{{vote_type.name}}-vote" action="/show/{{show.key.id}}/" method="post">
-					<input type="hidden" name="vote_start" value="{{vote_type.get.name}}">					
+				<form id="{{vote_type.get.name}}-vote" action="/show/{{show.key.id}}/" method="post">
 					{% if vote_type.get.has_intervals %}
 						{% if vote_type.get.remaining_intervals %}
 							{% if vote_type.get.suggestion_pool.get.available_suggestions >= vote_type.get.remaining_intervals %}
+							    <input type="hidden" name="vote_start" value="{{vote_type.get.name}}">
 								<input type="submit" class="btn btn-block btn-lg white-input x-large-font" style="background-color:{{vote_type.get.button_color}};" value="Start the {{vote_type.get.display_name}} Interval Vote">
 							{% else %}
 								<div class="btn btn-block btn-lg x-large-font word-wrap" style="background-color:{{vote_type.get.button_color}};">Need more {{vote_type.get.suggestion_pool.get.display_name}} to start the {{vote_type.get.display_name}} Intervals</div>
@@ -40,14 +40,22 @@
 							<div class="btn btn-block btn-lg x-large-font word-wrap" style="background-color:{{vote_type.get.button_color}};">No more {{vote_type.get.display_name}} Intervals</div>
 						{% endif %}
 					{% else %}
-						{% if vote_type.get.suggestion_pool.get.available_suggestions or vote_type.get.name == 'test' %}
+						{% if not vote_type.get.suggestion_pool or vote_type.get.suggestion_pool.get.available_suggestions or vote_type.get.name == 'test' %}
+						    <input type="hidden" name="vote_start" value="{{vote_type.get.name}}">
 							<input type="submit" class="btn btn-block btn-lg white-input x-large-font" style="background-color:{{vote_type.get.button_color}};" value="Start the {{vote_type.get.display_name}} Vote">
 						{% else %}
-							<div class="btn btn-block btn-lg x-large-font word-wrap" style="background-color:{{vote_type.get.button_color}};">Need more {{vote_type.get.suggestion_pool.get.display_name}} to start the {{vote_type.get.display_name}} Vote</div>
+						    {% if vote_type.get.name in show.used_types_names %}
+						        <input type="hidden" name="recap" value="{{vote_type.get.name}}">
+						        <input type="submit" class="btn btn-block btn-lg white-input x-large-font" style="background-color:{{vote_type.get.button_color}};" value="Recap the {{vote_type.get.display_name}} Vote">
+						    {% else %}
+							    <div class="btn btn-block btn-lg x-large-font word-wrap" style="background-color:{{vote_type.get.button_color}};">Need more {{vote_type.get.suggestion_pool.get.display_name}} to start the {{vote_type.get.display_name}} Vote</div>
+							{% endif %}
 						{% endif %}
 					{% endif %}
 				</form>
-				<hr/>
+				{% if vote_type.get.name == 'test' or vote_type.get.has_intervals %}
+				    <hr/>
+				{% endif %}
 			{% endfor %}
 
 		</div>

@@ -78,7 +78,9 @@ class ShowPage(ViewBase):
         # Admin is starting a recap
         elif self.request.get('recap') and self.context.get('is_admin', False):
             show.recap_init = get_mountain_time()
-            show.recap_type = self.request.get('recap')
+            show.recap_type = getattr(get_vote_type(name=self.request.get('recap')),
+                                      'key',
+                                      None)
             show.put()
         # Admin is locking/unlocking the voting
         elif self.request.get('lock_vote') and self.context.get('is_admin', False):
@@ -186,8 +188,13 @@ class VoteTypes(ViewBase):
         # Create Suggestion pool
         elif self.request.get('name'):
             suggestion_pool_id = self.request.get('suggestion_pool_id')
-            suggestion_pool_key = get_suggestion_pool(key_id=suggestion_pool_id,
-                                                      key_only=True)
+            # If the vote type uses a suggestion pool
+            if suggestion_pool_id:
+                suggestion_pool_key = get_suggestion_pool(key_id=suggestion_pool_id,
+                                                          key_only=True)
+            # Otherwise, don't use a suggestion pool
+            else:
+                suggestion_pool_key = None
             intervals_string = self.request.get('interval_list')
             # Parse the intervals, if there are any
             if intervals_string:
@@ -254,7 +261,7 @@ class DeleteTools(ViewBase):
     @admin_required
     def get(self):
         context = {'shows': fetch_shows(),
-                   'vote_types': get_unused_suggestions()}
+                   'suggestion_pools': get_unused_suggestions()}
         self.response.out.write(template.render(self.path('delete_tools.html'),
                                                 self.add_context(context)))
 
@@ -326,7 +333,7 @@ class DeleteTools(ViewBase):
         context = {'deleted': deleted,
                    'unused_deleted': unused_deleted,
                    'shows': fetch_shows(),
-                   'vote_types': get_unused_suggestions()}
+                   'suggestion_pools': get_unused_suggestions()}
         self.response.out.write(template.render(self.path('delete_tools.html'),
                                                 self.add_context(context)))
 

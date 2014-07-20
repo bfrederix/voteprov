@@ -78,7 +78,8 @@ def fetch_suggestion_pools(**kwargs):
         vts = VoteType.query(VoteType.occurs == kwargs.get('occurs'),
                              VoteType.name != 'test').fetch()
         for vt in vts:
-            suggestion_pools.append(vt.suggestion_pool.get())
+            if getattr(vt, 'suggestion_pool', None):
+                suggestion_pools.append(vt.suggestion_pool.get())
         return suggestion_pools
     else:
         return fetch_model_entities(SuggestionPool, **kwargs)
@@ -107,7 +108,7 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          used=None, voted_on=None,
                          suggestion=None, uses_suggestions=None,
                          limit=None, offset=None, keys_only=False,
-                         order_by_vote_value=False, delete=False):
+                         order_by_preshow_value=False, delete=False):
     args = []
     fetch_args = {}
     ordering = None
@@ -147,9 +148,9 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     if keys_only:
         fetch_args['keys_only'] = keys_only
     
-    # Order by vote_value
-    if order_by_vote_value:
-        ordering = [-model.vote_value]
+    # Order by preshow_value
+    if order_by_preshow_value:
+        ordering = [-model.preshow_value]
         
     if ordering:
         return model.query(*args).order(*ordering).fetch(**fetch_args)
@@ -177,6 +178,10 @@ def create_suggestion_pool(create_data):
     return create_model_entity(SuggestionPool, create_data)
 
 
+def create_preshow_vote(create_data):
+    return create_model_entity(PreshowVote, create_data)
+
+
 def create_live_vote(create_data):
     return create_model_entity(LiveVote, create_data)
 
@@ -201,14 +206,13 @@ def get_live_vote_exists(show, vote_type, interval, session_id, suggestion=None,
 
 def get_unused_suggestions():
     """Get unused suggestions for all vote types, categorized by vote type"""
-    vote_types = fetch_vote_types()
-    for vote_type in vote_types:
-        suggestion_pool = vote_type.suggestion_pool
-        suggestions = fetch_suggestions(suggestion_pool=suggestion_pool,
+    suggestion_pools = fetch_suggestion_pools()
+    for suggestion_pool in suggestion_pools:
+        suggestions = fetch_suggestions(suggestion_pool=suggestion_pool.key,
                                         used=False,
                                         voted_on=False)
-        setattr(vote_type, 'suggestions', suggestions)
-    return vote_types
+        setattr(suggestion_pool, 'suggestions', suggestions)
+    return suggestion_pools
 
 
 def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id, is_admin):
@@ -222,14 +226,18 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
     delete_id = request.get('delete_id')
     # If this is a brand new entry
     if entry_value:
-        # Create the suggestion
-        suggestion_entity = Suggestion(value=entry_value,
-                                       show=show,
-                                       suggestion_pool=suggestion_pool.key,
-                                       preshow_value=0,
-                                       session_id=session_id,
-                                       user_id=user_id).put().get()
-        context['created'] = True
+        already_exists = Suggestion.query(
+                             Suggestion.value == entry_value,
+                             Suggestion.suggestion_pool == suggestion_pool.key).get()
+        if not already_exists:
+            # Create the suggestion
+            suggestion_entity = Suggestion(value=entry_value,
+                                           show=show_key,
+                                           suggestion_pool=suggestion_pool.key,
+                                           preshow_value=0,
+                                           session_id=session_id,
+                                           user_id=user_id).put().get()
+            context['created'] = True
     elif upvote:
         suggestion_key = ndb.Key(Suggestion, int(upvote)).get().key
         # Get the pre-show vote if it exists for that suggestion and session id
@@ -238,7 +246,7 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
                 PreshowVote.session_id == session_id).get()
         # If it doesn't exist, create it
         if not pv:
-            PreshowVote(show=show,
+            PreshowVote(show=show_key,
                         suggestion=suggestion_key,
                         session_id=session_id).put()
     # If a delete was requested
@@ -253,18 +261,16 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
     # If an new suggestion entity was created
     if suggestion_entity:
         # Have to sort first by suggestion key, since we query on it. Dumb...
-        suggestion_entities = Suggestion.query(Suggestion.used == False,
-                                               Suggestion.key != suggestion_entity.key,
-                                               ).fetch()
+        suggestion_entities = get_suggestion_pool_page_suggestions(suggestion_pool.key,
+                                                                   ignore_key=suggestion_entity.key,
+                                                                   ordered=False)
         suggestion_entities.sort(key=lambda x: (x.preshow_value, x.created), reverse=True)
         # If the entity wasn't deleted
         if not delete_id:
             # Add the newly added suggestion entity
             suggestion_entities.append(suggestion_entity)
     else:
-        suggestion_entities = Suggestion.query(Suggestion.used == False,
-                                   ).order(-Suggestion.preshow_value,
-                                     Suggestion.created).fetch()
+        suggestion_entities = get_suggestion_pool_page_suggestions(suggestion_pool.key)
     context['suggestions'] = suggestion_entities
     
     return context
@@ -279,8 +285,17 @@ def get_current_suggestion_pools(current_show):
     return suggestion_pools
 
 
-def get_suggestion_pool_page_suggestions(suggestion_pool):
-    return Suggestion.query(Suggestion.suggestion_pool == suggestion_pool,
-                            Suggestion.used == False,
-                                ).order(-Suggestion.preshow_value,
-                                        Suggestion.created).fetch()
+def get_suggestion_pool_page_suggestions(suggestion_pool, ignore_key=None,
+                                         ordered=True):
+    query_args = [Suggestion.suggestion_pool == suggestion_pool,
+                  Suggestion.used == False]
+    # If we should ignore a specific key
+    if ignore_key:
+        query_args.append(Suggestion.key != ignore_key)
+    # If it should be ordered
+    if ordered:
+        return Suggestion.query(*query_args).order(-Suggestion.preshow_value,
+                                                    Suggestion.created).fetch()
+    # Otherwise return results without ordering
+    else:
+        return Suggestion.query(*query_args).fetch()

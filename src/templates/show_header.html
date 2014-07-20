@@ -104,8 +104,8 @@ $( document ).ready(function() {
 			// Add the player thumbnail image to the thumbnail row
 			$(thumbnail_column).append($(thumbnail_img));
 		}
-		var panel = $('<div class="panel panel-primary"></div>');
-		var panel_header = $('<div class="panel-heading text-center x-large-font">' + voting_data['display_name'] + ' Vote</div>');
+		var panel = $('<div class="panel panel-default"></div>');
+		var panel_header = $('<div class="panel-heading text-center xx-large-font">' + voting_data['display_name'] + ' Result</div>');
 		return {'panel': panel,
 				'panel_header': panel_header,
 				'thumbnail_column': thumbnail_column}
@@ -143,9 +143,9 @@ $( document ).ready(function() {
 		// Add the panel to the column
 		$(column).append($(panel));
 		// Add the panel header to the panel
-		//$(panel).append($(panel_header));
+		$(panel).append($(panel_header));
 		// Add the panel body to the panel
-		$(panel).append($(panel_body));
+		//$(panel).append($(panel_body));
 		// Add the thumbnail row to the panel body
 		$(panel_body).append($(panel_body_row));
 		// Add the panel footer to the panel

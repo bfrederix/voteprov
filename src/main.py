@@ -61,7 +61,7 @@ app = webapp2.WSGIApplication([
     # JSON ENDPOINT
     (r'/show_json/(\d+)/', ShowJSON),
     (r'/interval_timer_json/(\d+)/', IntervalTimerJSON),
-    (r'/upvote_json/',UpvoteJSON),
+    (r'/upvote_json/([a-zA-Z\-]+)/',UpvoteJSON),
     # Task Queues
     (r'/live_vote_worker/', LiveVoteWorker),
 ],
