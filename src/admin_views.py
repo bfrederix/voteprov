@@ -9,7 +9,7 @@ from google.appengine.api import users
 
 from views_base import ViewBase, get_or_default
 
-from service import (get_current_show, get_suggestion, get_player, get_show,
+from service import (get_suggestion, get_player, get_show,
                      get_vote_type, get_voted_item,
                      fetch_suggestions, get_suggestion_pool,
                      fetch_players, fetch_preshow_votes, fetch_vote_options,
@@ -35,9 +35,6 @@ class ShowPage(ViewBase):
     @admin_required
     def get(self, show_id):
         show = get_show(key_id=show_id)
-        ## TODO
-        ### We need to make sure that the show's leaderboard is set to hidden
-        ### When we hit the leaderboard page
         context = {'show': show,
                    'now_tz': back_to_tz(get_mountain_time()),
                    'host_url': self.request.host_url}
@@ -136,7 +133,7 @@ class CreateShow(ViewBase):
                 # If the vote type has intervals
                 if vote_type.has_intervals:                
                     # If this suggestion vote has players attached
-                    if vote_type.uses_players:
+                    if vote_type.interval_uses_players:
                         # Make a copy of the list of players and randomize it
                         rand_players = list(players)
                         random.shuffle(rand_players, random.random)
@@ -147,17 +144,17 @@ class CreateShow(ViewBase):
                                 rand_players = list(players)
                                 random.shuffle(rand_players, random.random)
                             # Pop a random player off the list and create a ShowInterval
-                            create_show_interval(show=show,
-                                                 player=rand_players.pop(),
-                                                 interval=interval,
-                                                 vote_type=vote_type)
+                            create_show_interval({'show': show.key,
+                                                  'player': rand_players.pop(),
+                                                  'interval': interval,
+                                                  'vote_type': vote_type.key})
                     else:
                         # Add the suggestion intervals to the show
                         for interval in vote_type.intervals:
                             # Create a ShowInterval
-                            create_show_interval(show=show,
-                                                interval=interval,
-                                                vote_type=vote_type)
+                            create_show_interval({'show': show.key,
+                                                  'interval': interval,
+                                                  'vote_type': vote_type.key})
             # Save changes to the show
             show.put()
             context['created'] = True
@@ -178,6 +175,7 @@ class VoteTypes(ViewBase):
     @admin_required
     def post(self):
         action = None
+        new_vote_type = None
         vote_type_ids = self.request.get_all('vote_type_ids')
         # Delete selected vote types
         if vote_type_ids:
@@ -185,7 +183,7 @@ class VoteTypes(ViewBase):
                 vote_type_key = get_vote_type(key_id=vote_type_id, key_only=True)
                 vote_type_key.delete()
             action = 'deleted'
-        # Create Suggestion pool
+        # Create Vote Type
         elif self.request.get('name'):
             suggestion_pool_id = self.request.get('suggestion_pool_id')
             # If the vote type uses a suggestion pool
@@ -206,11 +204,13 @@ class VoteTypes(ViewBase):
             else:
                 intervals = []
             # Create the vote type
-            create_vote_type({'name': self.request.get('name'),
+            new_vote_type = create_vote_type({
+                              'name': self.request.get('name'),
                               'display_name': self.request.get('display_name'),
                               'suggestion_pool': suggestion_pool_key,
                               'preshow_voted': bool(self.request.get('preshow_voted', False)),
                               'has_intervals': bool(self.request.get('has_intervals', False)),
+                              'interval_uses_players': bool(self.request.get('interval_uses_players', False)),
                               'style': self.request.get('style'),
                               'occurs': self.request.get('occurs'),
                               'ordering': int(self.request.get('ordering', 10)),
@@ -218,7 +218,11 @@ class VoteTypes(ViewBase):
                               'randomize_amount': int(get_or_default(self.request.get('randomize_amount'), 6)),
                               'intervals': intervals})
             action = 'created'
-        context = context = {'vote_types': fetch_vote_types(),
+        vote_types = fetch_vote_types()
+        # Add the latest created vote type
+        if new_vote_type:
+            vote_types.append(new_vote_type.get())
+        context = context = {'vote_types': vote_types,
                              'suggestion_pools': fetch_suggestion_pools(),
                              'vote_styles': VOTE_STYLE,
                              'occurs_types': OCCURS_TYPE,
@@ -299,7 +303,7 @@ class DeleteTools(ViewBase):
                 # Delete the Preshow Votes used in the show
                 preshow_votes = fetch_preshow_votes(show=show_key)
                 for preshow_vote in preshow_votes:
-                    preshow_votes.key.delete()
+                    preshow_vote.key.delete()
                 # Delete the Live Votes used in the show
                 live_votes = fetch_live_votes(show=show_key)
                 for live_vote in live_votes:
@@ -362,7 +366,7 @@ class AddPlayers(ViewBase):
 class IntervalTimer(ViewBase):
     @admin_required
     def get(self):
-        context = {'show': get_current_show(),
+        context = {'show': self.current_show,
                    'now_tz': back_to_tz(get_mountain_time())}
         self.response.out.write(template.render(self.path('interval_timer.html'),
                                                 self.add_context(context)))

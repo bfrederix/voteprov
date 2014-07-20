@@ -54,7 +54,7 @@
              <div class="form-group">
                 <label class="col-md-2 control-label">Suggestion Pool:</label>
                 <div class="col-md-3">
-                    <select name="suggestion_pool_ids" class="form-control">
+                    <select name="suggestion_pool_id" class="form-control">
                         <option value="">None</option>
                         {% for suggestion_pool in suggestion_pools %}
                             <option value="{{suggestion_pool.key.id}}">{{suggestion_pool.name}}</option>
@@ -72,6 +72,12 @@
                 <label class="col-md-2 control-label">Has Intervals:</label>
                 <div class="col-md-4">
                     <input type="checkbox" name="has_intervals" value="1">
+                </div>
+             </div>
+             <div class="form-group">
+                <label class="col-md-2 control-label">Intervals Use Players:</label>
+                <div class="col-md-4">
+                    <input type="checkbox" name="interval_uses_players" value="1">
                 </div>
              </div>
              <div class="form-group">

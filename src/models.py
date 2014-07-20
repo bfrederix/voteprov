@@ -61,12 +61,13 @@ class SuggestionPool(ndb.Model):
 
 
 class VoteType(ndb.Model):
+    # Defined at creation
     name = ndb.StringProperty(required=True)
     display_name = ndb.StringProperty(required=True, indexed=False)
     suggestion_pool = ndb.KeyProperty(kind=SuggestionPool, indexed=False)
     preshow_voted = ndb.BooleanProperty(required=True, default=False, indexed=False)
     has_intervals = ndb.BooleanProperty(required=True, default=False, indexed=False)
-    current_interval = ndb.IntegerProperty(indexed=False)
+    interval_uses_players = ndb.BooleanProperty(required=True, default=False, indexed=False)
     intervals = ndb.IntegerProperty(repeated=True, indexed=False)
     style = ndb.StringProperty(choices=VOTE_STYLE)
     occurs = ndb.StringProperty(choices=OCCURS_TYPE)
@@ -74,6 +75,9 @@ class VoteType(ndb.Model):
     options = ndb.IntegerProperty(default=3, indexed=False)
     randomize_amount = ndb.IntegerProperty(default=6, indexed=False)
     button_color = ndb.StringProperty(default="#003D7A", indexed=False)
+    
+    # Dynamic
+    current_interval = ndb.IntegerProperty(indexed=False)
 
     @property
     def get_next_interval(self):

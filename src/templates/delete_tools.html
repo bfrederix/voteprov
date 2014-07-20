@@ -15,7 +15,7 @@
             {% if suggestion_pool.name != 'test' %}
                 <form class="form-horizontal" role="form" action="/delete_tools/" method="post">
                     <div class="form-group">
-                        <label class="col-md-2 control-label">{{suggestion_pool.display_name}}:</label>
+                        <label class="col-md-2 control-label">Not voted on {{suggestion_pool.display_name}}:</label>
                         <div class="col-md-4">
                             <select name="suggestion_list" multiple class="form-control" size="12">
                             {% for suggestion in suggestion_pool.suggestions %}

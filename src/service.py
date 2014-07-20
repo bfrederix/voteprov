@@ -75,11 +75,17 @@ def fetch_suggestion_pools(**kwargs):
     # Get SuggestionPool's that are used before the show
     if kwargs.get('occurs'):
         suggestion_pools = []
+        # Get the suggestion pools grouped by when they occur
         vts = VoteType.query(VoteType.occurs == kwargs.get('occurs'),
                              VoteType.name != 'test').fetch()
         for vt in vts:
             if getattr(vt, 'suggestion_pool', None):
-                suggestion_pools.append(vt.suggestion_pool.get())
+                # Get the suggestion pool
+                suggestion_pool_entity = vt.suggestion_pool.get()
+                # Make sure that suggestion pool hasn't already been added
+                # to the suggestion pool list
+                if not suggestion_pool_entity in suggestion_pools:
+                    suggestion_pools.append(suggestion_pool_entity)
         return suggestion_pools
     else:
         return fetch_model_entities(SuggestionPool, **kwargs)
