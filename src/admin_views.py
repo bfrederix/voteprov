@@ -49,8 +49,9 @@ class ShowPage(ViewBase):
             vote_type = get_vote_type(name=self.request.get('vote_start'))
             # Set the current vote type for the show
             show.current_vote_type = vote_type.key
-            # Set the start time of the current vote
+            # Set the start time of the current vote and show vote
             show.current_vote_init = get_mountain_time()
+            vote_type.current_init = get_mountain_time()
             # If this suggestion vote has intervals
             if vote_type.has_intervals:
                 # Get the next interval

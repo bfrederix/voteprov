@@ -22,15 +22,22 @@ class IntervalTimerJSON(ViewBase):
     def get(self, show_id):
         time_json = {}
         show = get_show(key_id=show_id)
-        interval_gap = show.get_interval_gap(show.current_interval)
-        if interval_gap:
-            # Set the end of this gap
-            gap_end = back_to_tz(show.interval_vote_init) + datetime.timedelta(minutes=interval_gap)
-        else:
-            gap_end = back_to_tz(get_mountain_time())
-        time_json.update({'hour': gap_end.hour,
-                          'minute': gap_end.minute,
-                          'second': gap_end.second})
+        # Look through all the vote types for the show
+        for vote_type_key in show.vote_types:
+            vote_type = vote_type_key.get()
+            # If the vote type has intervals
+            if vote_type.has_intervals:
+                # Determine the gap between this interval and the next
+                interval_gap = vote_type.get_interval_gap(vote_type.current_interval)
+                if interval_gap and vote_type.current_init:
+                    # Set the end of this gap
+                    gap_end = back_to_tz(vote_type.current_init) + datetime.timedelta(minutes=interval_gap)
+                else:
+                    gap_end = back_to_tz(get_mountain_time())
+                # Set the interval json time for this vote type
+                time_json[vote_type.name] = {'hour': gap_end.hour,
+                                             'minute': gap_end.minute,
+                                             'second': gap_end.second}
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps(time_json))
 

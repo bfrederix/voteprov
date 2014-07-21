@@ -78,6 +78,7 @@ class VoteType(ndb.Model):
     
     # Dynamic
     current_interval = ndb.IntegerProperty(indexed=False)
+    current_init = ndb.DateTimeProperty(indexed=False)
 
     @property
     def get_next_interval(self):
@@ -233,7 +234,7 @@ class Show(ndb.Model):
         show_interval = ShowInterval.query(ShowInterval.show == self.key,
                                            ShowInterval.interval == interval,
                                            ShowInterval.vote_type == vote_type).get()
-        if show_interval.player:
+        if getattr(show_interval, 'player', None):
             return show_interval.player.get()
         else:
             return None
@@ -308,8 +309,8 @@ class Show(ndb.Model):
             if now_tz >= recap_start_tz and now_tz <= display_end:
                 state_dict.update({'state': recap_type_entity.name,
                                    'display': 'result',
-                                   'style': vote_type.style,
-                                   'display_name': vote_type.display_name,
+                                   'style': recap_type_entity.style,
+                                   'display_name': recap_type_entity.display_name,
                                    'recap': True,
                                    'hour': display_end.hour,
                                    'minute': display_end.minute,
