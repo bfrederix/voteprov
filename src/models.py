@@ -273,12 +273,17 @@ class Show(ndb.Model):
         if self.current_vote_init:
             # Get the timezone datetime of the start of the vote type
             init_time_tz = back_to_tz(self.current_vote_init)
-            # Get the end of the voting period for the type
-            vote_end = init_time_tz + datetime.timedelta(seconds=self.vote_length)
-            # Get the end of the overall display of the type
+            # If it's a pre-show vote, and we just want to show the result
+            if vote_type.preshow_voted:
+                # Get the start of the pre-show result display
+                vote_end = back_to_tz(self.current_vote_init)
+            else:
+                # Get the end of the normal voting period for the type
+                vote_end = init_time_tz + datetime.timedelta(seconds=self.vote_length)
+            # Get the end of the overall result display for the type
             display_end = vote_end + datetime.timedelta(seconds=self.result_length)
             # If we're in the voting period of this type (and it wasn't voted pre-show)
-            if now_tz >= init_time_tz and now_tz <= vote_end and not vote_type.preshow_voted:
+            if not vote_type.preshow_voted and now_tz >= init_time_tz and now_tz <= vote_end:
                 state_dict.update(
                        {'state': vote_type.name,
                         'display': 'voting',
@@ -290,7 +295,7 @@ class Show(ndb.Model):
                         'second': vote_end.second,
                         'voting_length': (vote_end - now_tz).seconds})
             # If we're in the result period of this type (or it was voted pre-show)
-            elif now_tz >= vote_end and now_tz <= display_end or vote_type.preshow_voted:
+            elif now_tz >= vote_end and now_tz <= display_end:
                 state_dict.update({'state': vote_type.name,
                                    'display': 'result',
                                    'style': vote_type.style,
@@ -563,7 +568,7 @@ class Show(ndb.Model):
                                                                                      interval=current_interval)
                     winning_suggestion = unused_suggestions[0]
                     # Get the winning pre-show vote value
-                    winning_count = winning_suggestion.suggestion.get().preshow_value
+                    winning_count = winning_suggestion.preshow_value
                     # Create the current voted
                     current_voted = VotedItem(vote_type=vote_type.key,
                                               show=self.key,
@@ -660,8 +665,8 @@ class LiveVote(ndb.Model):
 class ShowInterval(ndb.Model):
     show = ndb.KeyProperty(kind=Show, required=True)
     vote_type = ndb.KeyProperty(kind=VoteType, required=True)
-    player = ndb.KeyProperty(kind=Player, required=True)
     interval = ndb.IntegerProperty(required=True)
+    player = ndb.KeyProperty(kind=Player)
 
 
 class VoteOptions(ndb.Model):
