@@ -50,7 +50,7 @@ def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False
         args.append(model.vote_type == vote_type)
     item_entity = model.query(*args).get()
     # If we should delete the item
-    if delete:
+    if delete and item_entity:
         item_entity.key.delete()
         return
     return item_entity
@@ -199,15 +199,12 @@ def create_model_entity(model, create_data):
     return model(**create_kwargs).put()
 
 
-def get_live_vote_exists(show, vote_type, interval, session_id, suggestion=None,
-                         player=None):
-    return bool(LiveVote.query(
-                    LiveVote.suggestion == suggestion,
-                    LiveVote.player == player,
-                    LiveVote.show == show,
-                    LiveVote.vote_type == vote_type,
-                    LiveVote.interval == interval,
-                    LiveVote.session_id == str(session_id)).get())
+def get_live_vote_exists(show, vote_type, interval, session_id):
+    query_args = [LiveVote.show == show,
+                  LiveVote.vote_type == vote_type,
+                  LiveVote.interval == interval,
+                  LiveVote.session_id == str(session_id)]
+    return bool(LiveVote.query(*query_args).count())
 
 
 def get_unused_suggestions():

@@ -52,6 +52,7 @@ class LiveVoteWorker(webapp2.RequestHandler):
         state = None
         # Get the current show
         show = get_current_show()
+        vote_type = show.current_vote_type.get()
         vote_num = int(self.request.get('vote_num'))
         session_id = self.request.get('session_id')
         vote_data = show.current_vote_options(voting_only=True)
@@ -69,23 +70,22 @@ class LiveVoteWorker(webapp2.RequestHandler):
         if voted_option.get('id'):
             # If this is a player vote
             if show.current_vote_type \
-                and show.current_vote_type.get().style in ['player-pool', 'all-players']:
+                and vote_type.style in ['player-pool', 'all-players']:
                 player_key = get_player(key_id=voted_option.get('id'), key_only=True)
-            # else this is a suggestion vote
-            else:
+            # else this is a non-player related suggestion vote
+            elif vote_type != 'player-options':
                 suggestion_key = get_suggestion(key_id=voted_option.get('id'), key_only=True)
-        # Get the player key, if it exists
+        # Get the player key elsewhere, if it exists
         if vote_data.get('player_id'):
             player_key = get_player(key_id=vote_data.get('player_id'), key_only=True)
         # If there is a voting state of some kind
         if state and state != 'default':
-            # Determine if a live vote exists for this already
+            # Determine if a live vote exists for this
+            # show-vote_type-interval-player-session_id already
             vote_exists = get_live_vote_exists(show.key,
                                                show.current_vote_type,
                                                interval,
-                                               session_id,
-                                               player=player_key,
-                                               suggestion=suggestion_key)
+                                               session_id)
             # If they haven't voted yet, create the live vote
             if not vote_exists:
                 create_live_vote({'suggestion': suggestion_key,

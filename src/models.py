@@ -164,11 +164,15 @@ class VoteType(ndb.Model):
         return unused_suggestions
     
     def get_live_vote_count(self, show, player=None, suggestion=None, interval=None):
-        return LiveVote.query(LiveVote.show == show,
-                              LiveVote.vote_type == self.key,
-                              LiveVote.player == player,
-                              LiveVote.suggestion == suggestion,
-                              LiveVote.interval == interval).count()
+        query_args = [LiveVote.show == show,
+                      LiveVote.vote_type == self.key]
+        if player:
+            query_args.append(LiveVote.player == player)
+        if suggestion:
+            query_args.append(LiveVote.suggestion == suggestion)
+        if interval:
+            query_args.append(LiveVote.interval == interval)
+        return LiveVote.query(*query_args).count()
     
     def get_test_options(self, show):
         # Get the stored interval options
@@ -226,9 +230,13 @@ class Show(ndb.Model):
         return range(0, self.vote_options)
     
     def get_player_by_interval(self, interval, vote_type):
-        return ShowInterval.query(ShowInterval.show == self.key,
-                                  ShowInterval.interval == interval,
-                                  ShowInterval.vote_type == vote_type).get()
+        show_interval = ShowInterval.query(ShowInterval.show == self.key,
+                                           ShowInterval.interval == interval,
+                                           ShowInterval.vote_type == vote_type).get()
+        if show_interval.player:
+            return show_interval.player.get()
+        else:
+            return None
 
     @property
     def is_today(self):
@@ -274,6 +282,7 @@ class Show(ndb.Model):
                        {'state': vote_type.name,
                         'display': 'voting',
                         'style': vote_type.style,
+                        'interval': vote_type.current_interval,
                         # Set the end of the voting period
                         'hour': vote_end.hour,
                         'minute': vote_end.minute,
@@ -284,6 +293,7 @@ class Show(ndb.Model):
                 state_dict.update({'state': vote_type.name,
                                    'display': 'result',
                                    'style': vote_type.style,
+                                   'interval': vote_type.current_interval,
                                    'display_name': vote_type.display_name,
                                    'hour': vote_end.hour,
                                    'minute': vote_end.minute,
@@ -345,14 +355,15 @@ class Show(ndb.Model):
                     vote_options['options'].append(player_dict)
             elif vote_type.style == 'player-options':
                 # Get the current player
-                current_player = self.get_player_by_interval(interval, vote_type.key)
-                vote_options.update({'interval': current_interval,
-                                     'player_photo': current_player.get().photo_filename})
+                current_player = self.get_player_by_interval(current_interval, vote_type.key)
+                vote_options.update({'player_photo': current_player.photo_filename,
+                                     'player_id': current_player.key.id()})
                 unused_suggestions = vote_type.get_randomized_unused_suggestions(self.key,
                                                                                  interval=current_interval)
                 for unused_suggestion in unused_suggestions:
                     count = vote_type.get_live_vote_count(self.key,
-                                                          suggestion=unused_suggestion,
+                                                          player=current_player.key,
+                                                          suggestion=unused_suggestion.key,
                                                           interval=current_interval)
                     vote_options['options'].append({'value': unused_suggestion.value,
                                                     'id': unused_suggestion.key.id(),
@@ -447,7 +458,7 @@ class Show(ndb.Model):
                 vote_options['count'] = winning_count
             elif vote_type.style == 'player-options':
                 # Get the current player
-                current_player = self.get_player_by_interval(interval, vote_type.key)
+                current_player = self.get_player_by_interval(current_interval, vote_type.key)
                 # The winning suggestion hasn't been selected
                 if not vote_type.current_voted_item(self.key):
                     unused_suggestions = vote_type.get_randomized_unused_suggestions(self.key,
