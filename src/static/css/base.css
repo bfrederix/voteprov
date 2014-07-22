@@ -174,3 +174,8 @@ hr.thick-divider {
 	white-space: normal;
 	font-size:xx-large;
 }
+
+.suggestion-type {
+    font-size:xx-large;
+    font-weight:bold;
+}

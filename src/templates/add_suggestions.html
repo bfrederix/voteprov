@@ -22,10 +22,10 @@
                 <div class="container-fluid">
                     <div class="navbar-header">
                         <li class="dropdown">
-                            <a class="dropdown-toggle navbar-brand" data-toggle="dropdown" href="#">Suggestion Types <span class="caret"></span></a>
+                            <a class="dropdown-toggle navbar-brand" data-toggle="dropdown" href="#"><span class="suggestion-type">Suggestion Types</span> <span class="caret"></span></a>
                             <ul class="dropdown-menu" role="menu">
                                 {% for pool in current_suggestion_pools %}
-                                    <li {% if current_suggestion_pool.name == pool.name %}class="active"{% endif%}><a href="/suggestions/{{pool.name}}/">{{pool.display_name}}</a></li>
+                                    <li {% if current_suggestion_pool.name == pool.name %}class="active"{% endif%}><a href="/suggestions/{{pool.name}}/"><span class="suggestion-type">{{pool.display_name}}</span></a></li>
                                 {% endfor %}
                             </ul>
                         </li>
