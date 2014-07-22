@@ -176,6 +176,21 @@ hr.thick-divider {
 }
 
 .suggestion-type {
-    font-size:xx-large;
+    font-size:x-large;
     font-weight:bold;
+}
+
+.caret-up {
+    margin-left:20px;
+    margin-top:2px;
+}
+
+.caret-up:after {
+    content: ' ';
+	height: 0;
+	position: absolute;
+	width: 0;
+	border-left: 15px solid transparent;
+	border-right: 15px solid transparent;
+	border-bottom: 15px solid black;
 }
