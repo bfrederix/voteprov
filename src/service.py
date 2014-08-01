@@ -114,7 +114,8 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          used=None, voted_on=None,
                          suggestion=None, uses_suggestions=None,
                          limit=None, offset=None, keys_only=False,
-                         order_by_preshow_value=False, delete=False):
+                         order_by_preshow_value=False, delete=False,
+                         order_by_ordering=False):
     args = []
     fetch_args = {}
     ordering = None
@@ -153,10 +154,13 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # If we just need the keys
     if keys_only:
         fetch_args['keys_only'] = keys_only
-    
+    ordering = []
     # Order by preshow_value
     if order_by_preshow_value:
-        ordering = [-model.preshow_value]
+        ordering += [-model.preshow_value]
+    # Order by ordering
+    if order_by_ordering:
+        ordering += [model.ordering]
         
     if ordering:
         return model.query(*args).order(*ordering).fetch(**fetch_args)
