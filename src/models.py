@@ -682,3 +682,25 @@ class VotedItem(ndb.Model):
     suggestion = ndb.KeyProperty(kind=Suggestion)
     player = ndb.KeyProperty(kind=Player)
     interval = ndb.IntegerProperty(default=None)
+
+
+class Medal(ndb.Model):
+    name = ndb.StringProperty(required=True)
+    display_name = ndb.StringProperty(required=True)
+    description = ndb.TextProperty(required=True, indexed=False)
+    image_filename = ndb.StringProperty(required=True)
+
+
+class LeaderboardEntry(ndb.Model):
+    show = ndb.KeyProperty(kind=Show, required=True)
+    show_date = ndb.DateTimeProperty(required=True)
+    user_id = ndb.StringProperty(required=True)
+    points = ndb.IntegerProperty(default=0)
+    wins = ndb.IntegerProperty(default=0)
+    medals = ndb.KeyProperty(kind=Medal, repeated=True)
+
+
+class UserProfile(ndb.Model):
+    user_id = ndb.StringProperty(required=True)
+    username = ndb.StringProperty(default=None)
+    created = ndb.DateTimeProperty(required=True)

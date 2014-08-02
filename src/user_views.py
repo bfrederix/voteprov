@@ -5,12 +5,14 @@ from google.appengine.ext.webapp import template
 from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 
-from views_base import ViewBase, redirect_locked
+from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
+                     fetch_leaderboard_entries,
                      get_current_show, get_live_vote_exists,
                      create_live_vote, pre_show_voting_post,
-                     get_suggestion_pool_page_suggestions)
+                     get_suggestion_pool_page_suggestions,
+                     award_leaderboard_medals)
 
 
 class MainPage(ViewBase):
@@ -88,12 +90,22 @@ class LiveVoteWorker(webapp2.RequestHandler):
                                                session_id)
             # If they haven't voted yet, create the live vote
             if not vote_exists:
+                # Create the live vote
                 create_live_vote({'suggestion': suggestion_key,
                                   'vote_type': show.current_vote_type,
                                   'player': player_key,
                                   'show': show.key,
                                   'interval': interval,
                                   'session_id': session_id})
+                # If they are logged in, create a second live vote
+                if users.get_current_user():
+                    create_live_vote({'suggestion': suggestion_key,
+                                      'vote_type': show.current_vote_type,
+                                      'player': player_key,
+                                      'show': show.key,
+                                      'interval': interval,
+                                      'session_id': session_id})
+                
 
 
 class AddSuggestions(ViewBase):
@@ -138,15 +150,19 @@ class AddSuggestions(ViewBase):
 
 class AllTimeLeaderboard(ViewBase):
     @redirect_locked
-    def get(self):            
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.out.write("All-Time Leaderboard")
+    def get(self, year=None, month=None):
+        leaderboard_kwargs = {'year': year,
+                              'month': month}
+        fetch_leaderboard_entries(**leaderboard_kwargs)
+        self.response.out.write(template.render(self.path('leaderboards.html'),
+                                                self.add_context(context)))
 
 
 # Used to handle the user leaderboard url properly
 class UserLeaderboard(ViewBase):
     @redirect_locked
     def get(self, user_id):
+        fetch_leaderboard_entries(user_id=user_id)
         self.response.headers['Content-Type'] = 'text/plain'
         self.response.out.write("User ID: %s" % user_id)
 
@@ -155,12 +171,24 @@ class UserLeaderboard(ViewBase):
 class ShowLeaderboard(ViewBase):
     @redirect_locked
     def get(self, show_id):
+        show = get_show(key_id=show_id)
+        leaderboard_list = fetch_leaderboard_entries(show=show.key,
+                                                     order_by_points=True)
         # If user is an admin
         if self.context.get('is_admin', False):
             # Make sure to set the show leaderboard to hidden
             #(thwart race condition on the show admin page)
-            show = get_show(key_id=show_id)
             show.showing_leaderboard = False
             show.put()
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.out.write("Show ID: %s" % show_id)
+        self.response.out.write(template.render(self.path('leaderboards.html'),
+                                                self.add_context(context)))
+    
+    @admin_required
+    def post(self):
+        if self.request.get('award_medals'):
+            # Set the medals awarded to the users
+            award_leaderboard_medals(show)
+        leaderboard_list = fetch_leaderboard_entries(show=show.key,
+                                                     order_by_points=True)
+        self.response.out.write(template.render(self.path('leaderboards.html'),
+                                                self.add_context(context)))

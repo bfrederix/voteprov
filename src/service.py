@@ -2,7 +2,8 @@ from google.appengine.ext import ndb
 
 from models import (Show, Player, VoteType, Suggestion, PreshowVote,
                     ShowInterval, VoteOptions, LiveVote, SuggestionPool,
-                    VotedItem, get_current_show, VOTE_STYLE, OCCURS_TYPE)
+                    VotedItem, LeaderboardEntry, Medal, UserProfile,
+                    get_current_show, VOTE_STYLE, OCCURS_TYPE)
 from timezone import (get_today_start, get_tomorrow_start)
 
 
@@ -21,14 +22,29 @@ def get_player(**kwargs):
 def get_suggestion(**kwargs):
     return get_model_entity(Suggestion, **kwargs)
 
+
 def get_suggestion_pool(**kwargs):
     return get_model_entity(SuggestionPool, **kwargs)
+
 
 def get_voted_item(**kwargs):
     return get_model_entity(VotedItem, **kwargs)
 
+
+def get_medal(**kwargs):
+    return get_model_entity(Medal, **kwargs)
+
+
+def get_leaderboard_entry(**kwargs):
+    return get_model_entity(LeaderboardEntry, **kwargs)
+
+
+def get_user_profile(**kwargs):
+    return get_model_entity(UserProfile, **kwargs)
+
+
 def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False,
-                     show=None, vote_type=None):
+                     show=None, vote_type=None, user_id=None, username=None):
     # If key id is given, just return the key
     if key_id:
         key = ndb.Key(model, int(key_id))
@@ -48,6 +64,10 @@ def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False
         args.append(model.show == show)
     if vote_type:
         args.append(model.vote_type == vote_type)
+    if user_id:
+        args.append(model.user_id == user_id)
+    if username:
+        args.append(model.username == username)
     item_entity = model.query(*args).get()
     # If we should delete the item
     if delete and item_entity:
@@ -110,12 +130,43 @@ def fetch_show_intervals(**kwargs):
     return fetch_model_entities(ShowInterval, **kwargs)
 
 
+def fetch_user_medals(**kwargs):
+    return fetch_model_entities(UserMedal, **kwargs)
+
+
+def fetch_leaderboard_entries(**kwargs):
+    entries = fetch_model_entities(LeaderboardEntry, **kwargs)
+    if kwargs.get('unique_by_user'):
+        user_dict = {}
+        for entry in entries:
+            # Set defaults for wins and points if nothing exists
+            user_dict.setdefault(entry.user_id, {})
+            user_dict[entry.user_id].setdefault('points', 0)
+            user_dict[entry.user_id].setdefault('wins', 0)
+            user_dict[entry.user_id].setdefault('medals', 0)
+            # Add the wins and points for the user from this particular show
+            user_dict[entry.user_id]['points'] += entry.points
+            user_dict[entry.user_id]['wins'] += entry.wins
+            # Fetch the number of suggestions the user made in the show
+            user_dict[entry.user_id]['suggestions'] += fetch_suggestions(user_id=user_id,
+                                                                         show=entry.show,
+                                                                         count=True)
+            # Fetch the number of medals the user earned in the show
+            user_dict[entry.user_id]['medals'] += fetch_user_medals(user_id=user_id,
+                                                                    show=entry.show,
+                                                                    count=True)
+    else:
+        return entities
+
+
 def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          used=None, voted_on=None,
                          suggestion=None, uses_suggestions=None,
+                         month=None, year=None, user_id=None,
                          limit=None, offset=None, keys_only=False,
-                         order_by_preshow_value=False, delete=False,
-                         order_by_ordering=False):
+                         order_by_preshow_value=False, delete=False, count=False,
+                         order_by_ordering=False,
+                         order_by_points=False):
     args = []
     fetch_args = {}
     ordering = None
@@ -140,6 +191,17 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Fetch related to a suggestion
     if uses_suggestions != None:
         args.append(model.uses_suggestions == uses_suggestions)
+    # Fetch by month
+    if month != None:
+        ## ADD THIS LATER ##
+        pass
+    # Fetch by year
+    if year != None:
+        ## ADD THIS LATER ##
+        pass
+    # Fetch by user_id
+    if user_id != None:
+        args.append(model.user_id == user_id)
     
     # Delete the queried items
     if delete:
@@ -161,9 +223,14 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Order by ordering
     if order_by_ordering:
         ordering += [model.ordering]
+    # Order by points
+    if order_by_points:
+        ordering += [model.points]
         
     if ordering:
         return model.query(*args).order(*ordering).fetch(**fetch_args)
+    elif count:
+        return model.query(*args).count()
     else:
         return model.query(*args).fetch(**fetch_args)
 
@@ -194,6 +261,13 @@ def create_preshow_vote(create_data):
 
 def create_live_vote(create_data):
     return create_model_entity(LiveVote, create_data)
+
+
+def create_user_profile(create_data):
+    if not get_user_profile(username=create_data.get('username')):
+        return create_model_entity(UserProfile, create_data)
+    else:
+        return None
 
 
 def create_model_entity(model, create_data):
@@ -306,3 +380,88 @@ def get_suggestion_pool_page_suggestions(suggestion_pool, ignore_key=None,
     # Otherwise return results without ordering
     else:
         return Suggestion.query(*query_args).fetch()
+
+
+def add_medal(show, medal_name, user_id):
+    # Get the user id of the medal winner
+    user_id = medal_dict[medal_name]['user_id']
+    # If a user did win
+    if user_id:
+        # Get the medal winner
+        medal_winner = get_leaderboard_entry(show=show, user_id=user_id)
+        # Add the medal to the winner
+        medal_winner.medals.append(get_medal(name=medal_name))
+        medal_winner.put()
+
+
+def award_leaderboard_medals(show, test=None):
+    if not test:
+        leaderboard_entries = fetch_leaderboard_entries(show=show,
+                                                        order_by_points=True)
+    else:
+        ### TEST MOCK ###
+        leaderboard_entries = test
+    medal_dict = {'points': {'max': 0, 'user_id': None},
+                  'points_with_wins': {'max': 0, 'user_id': None},
+                  'points_without_win': {'max': 0, 'user_id': None},
+                  'win_percentage': {'max': 0, 'user_id': None}}
+    for entry in leaderboard_entries:
+        # Determine if a user has reached a new high for points
+        if entry.points > medal_dict['points']['max']:
+            medal_dict['points']['max'] = entry.points
+            medal_dict['points']['user_id'] = entry.user_id
+        win_addition = entry.wins * 5
+        # Determine if a user has reached a new high for points with wins factored in
+        if (entry.points + win_addition) > medal_dict['points_with_wins']['max']:
+            medal_dict['points_with_wins']['max'] = entry.points + win_addition
+            medal_dict['points_with_wins']['user_id'] = entry.user_id
+        # Determine if a user has reached a new high for points without a win
+        if not entry.wins and entry.points > medal_dict['points_without_win']['max']:
+            medal_dict['points_without_win']['max'] = entry.points
+            medal_dict['points_without_win']['user_id'] = entry.user_id
+        ### TEST MOCK ###
+        if not test:
+            user_suggestions = fetch_suggestions(show=show,
+                                                 user_id=entry.user_id,
+                                                 count=True)
+        else:
+            user_suggestions = entry.user_suggestions
+        try:
+            win_percentage = int(100 * (float(entry.wins) / float(user_suggestions)))
+        except ZeroDivisionError:
+            win_percentage = 0
+        # Determine if a user has reached a new high for points with wins factored in
+        if win_percentage > medal_dict['win_percentage']['max']:
+            medal_dict['win_percentage']['max'] = win_percentage
+            medal_dict['win_percentage']['user_id'] = entry.user_id
+    
+    if not test:
+        # Award the points medal
+        add_medal(show, 'points', medal_dict['points']['user_id'])
+    
+        # Award the points factored with wins medal
+        add_medal(show, 'points_with_wins', medal_dict['points_with_wins']['user_id'])
+    
+        # Award the points without a win medal
+        add_medal(show, 'points_without_win', medal_dict['points_without_win']['user_id'])
+    
+        # Award the win percentage medal
+        add_medal(show, 'win_percentage', medal_dict['win_percentage']['user_id'])
+    ### TEST MOCK ###
+    else:
+        return [medal_dict['points']['user_id'],
+                medal_dict['points_with_wins']['user_id'],
+                medal_dict['points_without_win']['user_id'],
+                medal_dict['win_percentage']['user_id']]
+
+
+def test_awarding():
+    test_entries = [
+        type('LeaderboardEntry',(object,), dict(user_id=1, points=30, wins=1, user_suggestions=10)),
+        type('LeaderboardEntry',(object,), dict(user_id=2, points=5, wins=1, user_suggestions=10)),
+        type('LeaderboardEntry',(object,), dict(user_id=3, points=21, wins=3, user_suggestions=10)),
+        type('LeaderboardEntry',(object,), dict(user_id=4, points=20, wins=0, user_suggestions=5)),
+        type('LeaderboardEntry',(object,), dict(user_id=5, points=15, wins=0, user_suggestions=5)),
+        type('LeaderboardEntry',(object,), dict(user_id=6, points=15, wins=1, user_suggestions=2))]
+    results = award_leaderboard_medals(None, test=test_entries)
+    assert results == [1, 3, 4, 6]

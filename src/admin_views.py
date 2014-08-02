@@ -1,13 +1,11 @@
 import datetime
 import json
-from functools import wraps
 import random
 
 import webapp2
 from google.appengine.ext.webapp import template
-from google.appengine.api import users
 
-from views_base import ViewBase, get_or_default
+from views_base import ViewBase, get_or_default, admin_required
 
 from service import (get_suggestion, get_player, get_show,
                      get_vote_type, get_voted_item,
@@ -17,18 +15,9 @@ from service import (get_suggestion, get_player, get_show,
                      fetch_vote_types, fetch_voted_items, fetch_show_intervals,
                      create_show, create_show_interval, create_suggestion_pool,
                      create_vote_type, create_player,
-                     get_unused_suggestions, VOTE_STYLE, OCCURS_TYPE)
+                     get_unused_suggestions, VOTE_STYLE, OCCURS_TYPE,
+                     test_awarding)
 from timezone import get_mountain_time, back_to_tz
-
-
-def admin_required(func):
-    @wraps(func)
-    def decorated_view(*args, **kwargs):
-        if not users.is_current_user_admin():
-            redirect_uri = users.create_login_url(webapp2.get_request().uri)
-            return webapp2.redirect(redirect_uri, abort=True)
-        return func(*args, **kwargs)
-    return decorated_view
 
 
 class ShowPage(ViewBase):
@@ -458,6 +447,8 @@ class JSTestPage(ViewBase):
         mock_data['second'] = end_vote_time.second
         mock_data['second'] = end_vote_time.second
         mock_data['voting_length'] = (end_vote_time - now_tz).seconds
+        
+        test_awarding()
 
         context = {'show': show_mock,
                    'now_tz': back_to_tz(get_mountain_time()),

@@ -68,7 +68,9 @@
 				  <ul class="nav navbar-nav navbar-right">
 					<li><a href="{{auth_url}}">{{auth_action}}</a></li>
 				  </ul>
-				  <p class="navbar-text navbar-right">{{user.nickname}}</p>
+				  {% if username %}
+				    <p class="navbar-text navbar-right">{{username}}</p>
+				  {% endif %}
 				</div>
 			</div>
 		</nav>
