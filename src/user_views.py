@@ -8,9 +8,11 @@ from google.appengine.api import taskqueue
 from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
-                     fetch_leaderboard_entries,
+                     get_show, fetch_shows,
+                     fetch_leaderboard_entries, fetch_user_profiles,
                      get_current_show, get_live_vote_exists,
-                     create_live_vote, pre_show_voting_post,
+                     create_live_vote, create_leaderboard_entry,
+                     pre_show_voting_post,
                      get_suggestion_pool_page_suggestions,
                      award_leaderboard_medals)
 
@@ -105,7 +107,29 @@ class LiveVoteWorker(webapp2.RequestHandler):
                                       'show': show.key,
                                       'interval': interval,
                                       'session_id': session_id})
-                
+                # Check if the suggestion has a user id attached to it
+                if suggestion_key and suggestion_key.get().user_id:
+                    # Get the suggestion's user id
+                    suggestion_user_id = suggestion_key.get().user_id
+                    # If the current user is logged in
+                    if users.get_current_user():
+                        # Give the suggestion user two points
+                        points = 2
+                    else:
+                        points = 1
+                    leaderboard_entry = get_leaderboard_entry(show=show.key,
+                                                              user_id=suggestion_user_id)
+                    # If a leaderboard entry exists for the suggestion user and show
+                    if leaderboard_entry:
+                        # Add the points to the suggestion user's leaderboard entry
+                        leaderboard_entry.points += points
+                        leaderboard_entry.put()
+                    else:
+                        # Create the suggestion user's leaderboard entry
+                        create_leaderboard_entry({'show': show.key,
+                                                  'show_date': show.created,
+                                                  'user_id': suggestion_user_id,
+                                                  'points': points})
 
 
 class AddSuggestions(ViewBase):
@@ -148,23 +172,17 @@ class AddSuggestions(ViewBase):
                                                 self.add_context(context)))
 
 
-class AllTimeLeaderboard(ViewBase):
+class Leaderboards(ViewBase):
     @redirect_locked
     def get(self, year=None, month=None):
         leaderboard_kwargs = {'year': year,
-                              'month': month}
-        fetch_leaderboard_entries(**leaderboard_kwargs)
+                              'month': month,
+                              'unique_by_user': True}
+        leaderboard_entries = fetch_leaderboard_entries(**leaderboard_kwargs)
+        context = {'shows': fetch_shows(),
+                   'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
                                                 self.add_context(context)))
-
-
-# Used to handle the user leaderboard url properly
-class UserLeaderboard(ViewBase):
-    @redirect_locked
-    def get(self, user_id):
-        fetch_leaderboard_entries(user_id=user_id)
-        self.response.headers['Content-Type'] = 'text/plain'
-        self.response.out.write("User ID: %s" % user_id)
 
 
 # Used to handle the show leaderboard url properly
@@ -172,7 +190,7 @@ class ShowLeaderboard(ViewBase):
     @redirect_locked
     def get(self, show_id):
         show = get_show(key_id=show_id)
-        leaderboard_list = fetch_leaderboard_entries(show=show.key,
+        leaderboard_entries = fetch_leaderboard_entries(show=show.key,
                                                      order_by_points=True)
         # If user is an admin
         if self.context.get('is_admin', False):
@@ -180,15 +198,40 @@ class ShowLeaderboard(ViewBase):
             #(thwart race condition on the show admin page)
             show.showing_leaderboard = False
             show.put()
+        context = {'show_id': int(show_id),
+                   'shows': fetch_shows(),
+                   'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
                                                 self.add_context(context)))
     
     @admin_required
-    def post(self):
+    def post(self, show_id):
         if self.request.get('award_medals'):
             # Set the medals awarded to the users
             award_leaderboard_medals(show)
-        leaderboard_list = fetch_leaderboard_entries(show=show.key,
+        leaderboard_entries = fetch_leaderboard_entries(show=show.key,
                                                      order_by_points=True)
+        context = {'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
+                                                self.add_context(context)))
+
+
+# Used to handle the user account
+class UserAccount(ViewBase):
+    @redirect_locked
+    def get(self, user_id):
+        user_profiles = fetch_user_profiles(user_id=self.current_user.user_id())
+        # Set the user profile as the first user profile found
+        user_profile = user_profiles[0]
+        # IF a duplicate user profile was created, delete it!!
+        if len(user_profiles) > 1:
+            user_profiles[1].key.delete()
+        if self.request.get('test'):
+            leaderboard_entries = test_leaderboard_entries()
+        else:
+            leaderboard_entries = fetch_leaderboard_entries(user_id=user_id,
+                                                        order_by_show_date=True)
+        context = {'leaderboard_entries': leaderboard_entries,
+                   'user_profile': user_profile}
+        self.response.out.write(template.render(self.path('user_account.html'),
                                                 self.add_context(context)))

@@ -10,6 +10,17 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: LeaderboardEntry
+  properties:
+  - name: show
+  - name: points
+
+- kind: LeaderboardEntry
+  properties:
+  - name: user_id
+  - name: show_date
+    direction: desc
+
 - kind: Suggestion
   properties:
   - name: suggestion_pool

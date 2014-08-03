@@ -105,7 +105,7 @@ class ViewBase(webapp2.RequestHandler):
     def user_profile(self):
         """Returns currently logged in user"""
         if self.current_user:
-            # Try to fetch the user profile
+            # Try to get the user profile
             user_profile = get_user_profile(user_id=self.current_user.user_id())
             if not user_profile:
                 # Create the userprofile

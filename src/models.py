@@ -690,6 +690,9 @@ class Medal(ndb.Model):
     description = ndb.TextProperty(required=True, indexed=False)
     image_filename = ndb.StringProperty(required=True)
 
+    @property
+    def img_path(self):
+        return "/static/img/medals/%s" % self.image_filename
 
 class LeaderboardEntry(ndb.Model):
     show = ndb.KeyProperty(kind=Show, required=True)
@@ -699,6 +702,9 @@ class LeaderboardEntry(ndb.Model):
     wins = ndb.IntegerProperty(default=0)
     medals = ndb.KeyProperty(kind=Medal, repeated=True)
 
+    @property
+    def username(self):
+        return UserProfile.query(UserProfile.user_id == self.user_id).get().username
 
 class UserProfile(ndb.Model):
     user_id = ndb.StringProperty(required=True)

@@ -1,3 +1,6 @@
+import datetime
+from operator import itemgetter
+
 from google.appengine.ext import ndb
 
 from models import (Show, Player, VoteType, Suggestion, PreshowVote,
@@ -130,33 +133,45 @@ def fetch_show_intervals(**kwargs):
     return fetch_model_entities(ShowInterval, **kwargs)
 
 
-def fetch_user_medals(**kwargs):
-    return fetch_model_entities(UserMedal, **kwargs)
-
-
 def fetch_leaderboard_entries(**kwargs):
-    entries = fetch_model_entities(LeaderboardEntry, **kwargs)
+    if not kwargs.get('test'):
+        entries = fetch_model_entities(LeaderboardEntry, **kwargs)
+    else:
+        entries = test_leaderboard_entries()
     if kwargs.get('unique_by_user'):
         user_dict = {}
+        # Create a dictionary with user ids as the key
         for entry in entries:
             # Set defaults for wins and points if nothing exists
             user_dict.setdefault(entry.user_id, {})
+            user_dict[entry.user_id].setdefault('username', entry.username)
             user_dict[entry.user_id].setdefault('points', 0)
             user_dict[entry.user_id].setdefault('wins', 0)
             user_dict[entry.user_id].setdefault('medals', 0)
-            # Add the wins and points for the user from this particular show
+            user_dict[entry.user_id].setdefault('suggestions', 0)
+            # Add the wins, points, and medals for the user from this particular show
             user_dict[entry.user_id]['points'] += entry.points
             user_dict[entry.user_id]['wins'] += entry.wins
-            # Fetch the number of suggestions the user made in the show
-            user_dict[entry.user_id]['suggestions'] += fetch_suggestions(user_id=user_id,
-                                                                         show=entry.show,
-                                                                         count=True)
-            # Fetch the number of medals the user earned in the show
-            user_dict[entry.user_id]['medals'] += fetch_user_medals(user_id=user_id,
-                                                                    show=entry.show,
-                                                                    count=True)
+            user_dict[entry.user_id]['medals'] += entry.medals
+            if not kwargs.get('test'):
+                # Fetch the number of suggestions the user made in the show
+                user_dict[entry.user_id]['suggestions'] += fetch_suggestions(user_id=user_id,
+                                                                             show=entry.show,
+                                                                             count=True)
+        user_list = []
+        # Turn that dictionary into a list of dictionaries
+        for user_id, value_dict in user_dict.items():
+            user_data = {'user_id': user_id}
+            user_data.update(value_dict)
+            user_list.append(user_data)
+        # Sort the list by points
+        return sorted(user_list, key=itemgetter('points'))
     else:
-        return entities
+        return entries
+
+
+def fetch_user_profiles(**kwargs):
+    return fetch_model_entities(UserProfile, **kwargs)
 
 
 def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
@@ -165,8 +180,9 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          month=None, year=None, user_id=None,
                          limit=None, offset=None, keys_only=False,
                          order_by_preshow_value=False, delete=False, count=False,
-                         order_by_ordering=False,
-                         order_by_points=False):
+                         order_by_ordering=False, order_by_points=False,
+                         order_by_show_date=False, order_by_created=False,
+                         unique_by_user=False):
     args = []
     fetch_args = {}
     ordering = None
@@ -226,6 +242,12 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Order by points
     if order_by_points:
         ordering += [model.points]
+    # Order by the date the show occurred
+    if order_by_show_date:
+        ordering += [-model.show_date]
+    # Order by the date the show was created
+    if order_by_created:
+        ordering += [-model.created]
         
     if ordering:
         return model.query(*args).order(*ordering).fetch(**fetch_args)
@@ -261,6 +283,10 @@ def create_preshow_vote(create_data):
 
 def create_live_vote(create_data):
     return create_model_entity(LiveVote, create_data)
+
+
+def create_leaderboard_entry(create_data):
+    return create_model_entity(LeaderboardEntry, create_data)
 
 
 def create_user_profile(create_data):
@@ -455,13 +481,16 @@ def award_leaderboard_medals(show, test=None):
                 medal_dict['win_percentage']['user_id']]
 
 
+def test_leaderboard_entries():
+    return [
+        type('LeaderboardEntry',(object,), dict(user_id=1, points=30, wins=1, user_suggestions=10, show_date=datetime.datetime.now(), username='user1')),
+        type('LeaderboardEntry',(object,), dict(user_id=2, points=5, wins=1, user_suggestions=10, show_date=datetime.datetime.now(), username='user2')),
+        type('LeaderboardEntry',(object,), dict(user_id=3, points=21, wins=3, user_suggestions=10, show_date=datetime.datetime.now(), username='user3')),
+        type('LeaderboardEntry',(object,), dict(user_id=4, points=20, wins=0, user_suggestions=5, show_date=datetime.datetime.now(), username='user4')),
+        type('LeaderboardEntry',(object,), dict(user_id=5, points=15, wins=0, user_suggestions=5, show_date=datetime.datetime.now(), username='user5')),
+        type('LeaderboardEntry',(object,), dict(user_id=6, points=15, wins=1, user_suggestions=2, show_date=datetime.datetime.now(), username='user6'))]
+
+
 def test_awarding():
-    test_entries = [
-        type('LeaderboardEntry',(object,), dict(user_id=1, points=30, wins=1, user_suggestions=10)),
-        type('LeaderboardEntry',(object,), dict(user_id=2, points=5, wins=1, user_suggestions=10)),
-        type('LeaderboardEntry',(object,), dict(user_id=3, points=21, wins=3, user_suggestions=10)),
-        type('LeaderboardEntry',(object,), dict(user_id=4, points=20, wins=0, user_suggestions=5)),
-        type('LeaderboardEntry',(object,), dict(user_id=5, points=15, wins=0, user_suggestions=5)),
-        type('LeaderboardEntry',(object,), dict(user_id=6, points=15, wins=1, user_suggestions=2))]
-    results = award_leaderboard_medals(None, test=test_entries)
+    results = award_leaderboard_medals(None, test=test_leaderboard_entries())
     assert results == [1, 3, 4, 6]

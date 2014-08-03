@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block leaderboards-selected %}class="active"{% endblock %}
+
+{% block add_head %}
+<script>
+$( document ).ready(function() {
+    document.getElementById("show").onchange = function() {
+        if (this.selectedIndex!==0) {
+            window.location.href = this.value;
+        }        
+    };
+    document.getElementById("year").onchange = function() {
+        if (this.selectedIndex!==0) {
+            window.location.href = this.value;
+        }        
+    };
+});
+</script>
+{% endblock %}
+
+{% block content %}
+	<div class="container-fluid">
+	    <form class="form-inline" role="form">
+            <div class="form-group">
+                <label for="show">Show</label>
+	            <select id="show" class="form-control">
+	                <option value="">Select Show</option>
+	                {% for show in shows %}
+                        <option value="/leaderboards/show/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y @ P"}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            &nbsp;
+            <div class="form-group">
+                <a class-"text-center" href="/leaderboards/">
+					<div class="btn btn-primary btn-block btn-lg home-show-btn">&nbsp;All-time Leaderboards&nbsp;</div>
+				</a>
+            </div>
+            {% comment %}
+            <div class="form-group">
+                <label for="year">Year</label>
+                    <select id="year" class="form-control">
+                        <option>Select Year</option>
+                        {% for show in shows %}
+                            <option value="/leaderboards/year/month/"></option>
+                        {% endfor %}
+                    </select>
+            </div>
+            {% endcomment %}
+        </form>
+        <div class="table-responsive">
+            <table class="table table-striped table-bordered">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Username</th>
+                        <th>Suggestions</th>
+                        <th>Points</th>
+                        <th>Winning Suggestions</th>
+                        <th>Medals</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        {% for entry in leaderboard_entries %}
+                            <td>{{forloop.counter}}</td>
+                            <td>{{entry.username}}</td>
+                            <td>{{entry.suggestions}}</td>
+                            <td>{{entry.points}}</td>
+                            <td>{{entry.wins}}</td>
+                            <td>{{entry.medals|length}}</td>
+                        {% endfor %}
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+	</div>
+{% endblock %}

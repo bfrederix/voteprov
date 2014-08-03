@@ -36,7 +36,7 @@
 				  <ul class="nav navbar-nav">
 					<li {% block home-selected %}{% endblock %}><a href="/">Home</a></li>
 					{% if show_today %}{% if is_admin %}<li><a href="/show/{{current_show.key.id}}/"><strong>Show Admin</strong></a></li>{% else %}<li {% block live-vote-selected %}{% endblock %}><a href="/live_vote/"><strong>Live Vote!</strong></a></li>{% endif %}{% endif %}
-					{% if show_today %}
+                                        {% if show_today %}					
                         <li class="dropdown{% block suggestions-selected %}{% endblock %}">
                             <a class="dropdown-toggle" data-toggle="dropdown" href="#">
                                 Suggestions <span class="caret"></span>
@@ -48,6 +48,10 @@
                             </ul>
                         </li>
                     {% endif %}
+                    <li {% block leaderboards-selected %}{% endblock %}><a href="/leaderboards/">Leaderboards</a></li>
+    				{% if username %}
+    				    <li {% block user-account-selected %}{% endblock %}><a href="/user/{{user.user_id}}/">My Account</a></li>
+    				{% endif %}
 					{% if is_admin %}
 						<li class="dropdown{% block admin-selected %}{% endblock %}">
     						<a class="dropdown-toggle" data-toggle="dropdown" href="#">
