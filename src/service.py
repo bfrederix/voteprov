@@ -176,6 +176,10 @@ def fetch_user_profiles(**kwargs):
     return fetch_model_entities(UserProfile, **kwargs)
 
 
+def fetch_medals(**kwargs):
+    return fetch_model_entities(Medal, **kwargs)
+
+
 def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          used=None, voted_on=None,
                          suggestion=None, uses_suggestions=None,

@@ -24,7 +24,7 @@ import webapp2
 from views_base import RobotsTXT, LoaderIO
 from user_views import (MainPage, LiveVote, AddSuggestions,
 						LiveVoteWorker, ShowLeaderboard,
-						Leaderboards, UserAccount)
+						Leaderboards, UserAccount, MedalsPage)
 from admin_views import (ShowPage, CreateShow, DeleteTools,
 						 SuggestionPools, VoteTypes,
 					     JSTestPage, AddPlayers, IntervalTimer)
@@ -51,6 +51,7 @@ app = webapp2.WSGIApplication([
     (r'/suggestions/([a-zA-Z\-]+)/', AddSuggestions),
     (r'/suggestions/', AddSuggestions),
     (r'/user/(\d+)/', UserAccount),
+    (r'/medals/', MedalsPage),
     # Admin URLS
     (r'/show/(\d+)/', ShowPage),
     (r'/create_show/', CreateShow),

@@ -82,14 +82,14 @@ $( document ).ready(function() {
                             {% if show_id %}
                                 <td>
                                 {% for medal in entry.medals %}
-                                    <div class="{{medal.get.name}}-medal pull-left"></div>
+                                    <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
                                 {% endfor %}
                                 </td>
                             {% else %}
                                 <td>{{entry.medals|length}}</td>
                             {% endif %}
                             {% if not show_id %}
-                                <td>{{entry.level}}</td>
+                                <td><div class="level-medal pull-left"><div class="level-number">{{entry.level}}</div></div></td>
                             {% endif %}
                         </tr>
                     {% endfor %}

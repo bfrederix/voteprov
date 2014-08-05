@@ -10,7 +10,7 @@ from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
                      get_show, get_user_profile, get_leaderboard_entry,
                      fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
-                     get_current_show, get_live_vote_exists,
+                     fetch_medals, get_current_show, get_live_vote_exists,
                      create_live_vote, create_leaderboard_entry,
                      pre_show_voting_post,
                      get_suggestion_pool_page_suggestions,
@@ -287,4 +287,13 @@ class UserAccount(ViewBase):
                    'page_user_id': user_id,
                    'update': update}
         self.response.out.write(template.render(self.path('user_account.html'),
+                                                self.add_context(context)))
+
+
+# Used to handle the user account
+class MedalsPage(ViewBase):
+    @redirect_locked
+    def get(self):
+        context = {'medals': fetch_medals()}
+        self.response.out.write(template.render(self.path('medals.html'),
                                                 self.add_context(context)))
