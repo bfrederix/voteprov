@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 from models import (Show, Player, VoteType, Suggestion, PreshowVote,
                     ShowInterval, VoteOptions, LiveVote, SuggestionPool,
                     VotedItem, LeaderboardEntry, Medal, UserProfile,
-                    get_current_show, VOTE_STYLE, OCCURS_TYPE)
+                    get_current_show, VOTE_STYLE, OCCURS_TYPE, LEVEL_POINT)
 from timezone import (get_today_start, get_tomorrow_start)
 
 
@@ -153,6 +153,8 @@ def fetch_leaderboard_entries(**kwargs):
             user_dict[entry.user_id]['points'] += entry.points
             user_dict[entry.user_id]['wins'] += entry.wins
             user_dict[entry.user_id]['medals'] += entry.medals
+            # Calculate the level they are at
+            user_dict[entry.user_id]['level'] = (user_dict[entry.user_id]['points'] / LEVEL_POINT) + 1
             if not kwargs.get('test'):
                 # Fetch the number of suggestions the user made in the show
                 user_dict[entry.user_id]['suggestions'] += fetch_suggestions(user_id=user_id,

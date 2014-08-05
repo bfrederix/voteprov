@@ -198,3 +198,27 @@ hr.thick-divider {
 	border-right: 15px solid transparent;
 	border-bottom: 15px solid black;
 }
+
+.level-medal {
+    position: relative;
+    background-image:url('/static/img/medals/rank-icon.png');
+    background-position: left center;
+    background-repeat: no-repeat;
+    width: 52px;
+    height: 52px;
+}
+
+.level-number {
+    position: absolute;
+    top: 15px;
+    right: 1px;
+    padding: 4px;
+    color: white;
+    text-shadow:
+    -2px -2px 0 #000,
+    2px -2px 0 #000,
+    -2px 2px 0 #000,
+    2px 2px 0 #000;
+    font-weight: bold;
+    font-size: 24px;
+}

@@ -11,6 +11,8 @@ VOTE_STYLE = ['player-options', 'player-pool', 'options',
               'preshow-voted', 'all-players', 'test']
 OCCURS_TYPE = ['during', 'before']
 
+LEVEL_POINT = 30
+
 
 def get_current_show():
     return Show.query(

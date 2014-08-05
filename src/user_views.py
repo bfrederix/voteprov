@@ -210,7 +210,7 @@ class ShowLeaderboard(ViewBase):
             # Set the medals awarded to the users
             award_leaderboard_medals(show)
         leaderboard_entries = fetch_leaderboard_entries(show=show.key,
-                                                     order_by_points=True)
+                                                        order_by_points=True)
         context = {'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
                                                 self.add_context(context)))
@@ -226,18 +226,14 @@ class UserAccount(ViewBase):
         # IF a duplicate user profile was created, delete it!!
         if len(user_profiles) > 1:
             user_profiles[1].key.delete()
-        if self.request.get('test'):
-            show_entries = test_leaderboard_entries()
-            leaderboard_entries = test_leaderboard_entries()
-        else:
-            show_entries = fetch_leaderboard_entries(user_id=user_id,
-                                                     order_by_show_date=True)
-            try:
-                leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
-                                                              unique_by_user=True)[0]
-            except IndexError:
-                leaderboard_stats = {'points': 0, 'medals': 0, 'wins': 0,
-                                     'suggestions': 0}
+        show_entries = fetch_leaderboard_entries(user_id=user_id,
+                                                 order_by_show_date=True)
+        try:
+            leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
+                                                          unique_by_user=True)[0]
+        except IndexError:
+            leaderboard_stats = {'level': 1, 'points': 0, 'medals': 0, 'wins': 0,
+                                 'suggestions': 0}
         context = {'show_entries': show_entries,
                    'leaderboard_stats': leaderboard_stats,
                    'user_profile': user_profile,
