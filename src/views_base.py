@@ -44,18 +44,7 @@ class ViewBase(webapp2.RequestHandler):
     def __init__(self, *args, **kwargs):
         super(ViewBase, self).__init__(*args, **kwargs)
         self.app = webapp2.get_app()
-        user = users.get_current_user()
-        username = None
-        if user:
-            auth_url = users.create_logout_url(self.request.uri)
-            if self.user_profile.username:
-                username = self.user_profile.username
-            elif user:
-                username = user.nickname()
-            auth_action = 'Logout'
-        else:
-            auth_url = users.create_login_url(self.request.uri)
-            auth_action = 'Login'
+        auth_url, auth_action = self.get_auth_data()
         self.current_show = get_current_show()
         self.context = {
                     'host_domain': self.request.host_url.replace('http://', ''),
@@ -65,14 +54,67 @@ class ViewBase(webapp2.RequestHandler):
                     'audio_path': self.app.registry.get('audio'),
                     'player_image_path': self.app.registry.get('player_images'),
                     'is_admin': users.is_current_user_admin(),
-                    'user': user,
-                    'username': username,
+                    'user': self.user,
+                    'username': self.username,
                     'auth_url': auth_url,
                     'auth_action': auth_action,
                     'path_qs': self.request.path_qs,
                     'current_show': self.current_show,
                     'show_today': bool(self.current_show),
                     'current_suggestion_pools': get_current_suggestion_pools(self.current_show)}
+    
+    def get_auth_data(self):
+        """Used to get the auth action and the auth url
+           based on if you are authenticated
+        """
+        # If the user is logged in
+        if self.user:
+            auth_url = users.create_logout_url(self.request.uri)
+            auth_action = 'Logout'
+        # If they aren't logged in
+        else:
+            # Attempt to update the user profile's session with google auth
+            self.user = self.google_login()
+            # If the user is now logged in
+            if self.user:
+                auth_url = users.create_logout_url(self.request.uri)
+                auth_action = 'Logout'
+            # If the user still isn't logged in
+            else:
+                auth_url = users.create_login_url(self.request.uri)
+                auth_action = 'Login'
+        return auth_url, auth_action
+    
+    def google_login(self):
+        """Used to login and update the user profile session
+           or create the initial user profile
+        """
+        user = users.get_current_user()
+        # If the user is logged in via Google
+        if user:
+            # Try to get the user profile by user id
+            user_profile = get_user_profile(user_id=user.user_id())
+            # If we've found the user profile, update the session
+            if user_profile:
+                user_profile.current_session = self.session.get('id')
+                user_profile.put()
+                return user_profile
+            else:
+                # Try to get the user profile by email
+                user_profile = get_user_profile(email=user.email())
+                if user_profile:
+                    # If the profile was found by email, set the current session
+                    user_profile.current_session = self.session.get('id')
+                    user_profile.put()
+                    return user_profile
+                else:
+                    # Create the userprofile from the google login
+                    user_profile = create_user_profile({'user_id': user.user_id(),
+                                                        'email': user.email(),
+                                                        'username': user.nickname(),
+                                                        'created': get_mountain_time()})
+                    return user_profile.get()
+        return None
     
     def add_context(self, add_context={}):
         self.context.update(add_context)
@@ -95,42 +137,25 @@ class ViewBase(webapp2.RequestHandler):
             # Get a random hash to store as the session id
             session['id'] = random.getrandbits(128)
         return session
-  
-    @property
-    def current_user(self):
-        """Returns currently logged in user"""
-        return users.get_current_user()
     
     @property
     def user_id(self):
         """Returns currently logged in user's id"""
-        if self.current_user:
-            return self.current_user.user_id()
-        else:
-            return None
+        return getattr(self.user, 'user_id', None)
     
     @property
-    def user_profile(self):
+    def username(self):
+        """Returns currently logged in user's id"""
+        return getattr(self.user, 'username', None)
+    
+    @property
+    def user(self):
         """Returns currently logged in user"""
-        if self.current_user:
-            # Try to get the user profile
-            user_profile = get_user_profile(user_id=self.user_id)
-            if not user_profile:
-                # Create the userprofile
-                profile_key = create_user_profile({'user_id': self.user_id,
-                                                   'username': self.current_user.nickname(),
-                                                   'created': get_mountain_time()})
-                # If the profile was created successfully
-                if profile_key:
-                    return profile_key.get()
-                # Possible conflicting username
-                else:
-                    return None
-            else:
-                return user_profile
-        # No current user
-        else:
-            return None
+        # Try to get the user profile by session id
+        user_profile = get_user_profile(current_session=self.session.get('id', '-1'))
+        if user_profile:
+            return user_profile
+        return None
 
 
 class RobotsTXT(webapp2.RequestHandler):

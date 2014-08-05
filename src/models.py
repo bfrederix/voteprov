@@ -750,6 +750,9 @@ class UserProfile(ndb.Model):
     user_id = ndb.StringProperty(required=True)
     username = ndb.StringProperty(default=None)
     strip_username = ndb.StringProperty(default=None)
+    email = ndb.StringProperty(default=None)
+    fb_token = ndb.StringProperty(default=None)
+    current_session = ndb.StringProperty(default=None)
     created = ndb.DateTimeProperty(required=True)
 
     def put(self, *args, **kwargs):

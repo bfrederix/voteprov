@@ -47,7 +47,7 @@ def get_user_profile(**kwargs):
 
 def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False,
                      show=None, vote_type=None, user_id=None, username=None,
-                     strip_username=None):
+                     strip_username=None, current_session=None):
     # If key id is given, just return the key
     if key_id:
         key = ndb.Key(model, int(key_id))

@@ -2,7 +2,6 @@ import datetime
 import webapp2
 
 from google.appengine.ext.webapp import template
-from google.appengine.api import users
 from google.appengine.api import taskqueue
 
 from views_base import ViewBase, redirect_locked, admin_required
@@ -161,16 +160,12 @@ class AddSuggestions(ViewBase):
 
     @redirect_locked
     def post(self, suggestion_pool_name):
-        if self.current_user:
-            user_id = self.user_id
-        else:
-            user_id = None
         current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
         context = pre_show_voting_post(getattr(self.current_show, 'key', None),
                                        current_suggestion_pool,
                                        self.request,
                                        str(self.session.get('id', '0')),
-                                       user_id,
+                                       self.user_id,
                                        self.context.get('is_admin', False))
 
         context.update({'current_suggestion_pool': current_suggestion_pool,
@@ -265,7 +260,7 @@ class UserAccount(ViewBase):
         change_username = self.request.get('change_username')
         if change_username:
             # Update the user profile with the new username
-            user_profile = update_user_profile(self.user_profile.user_id, change_username)
+            user_profile = update_user_profile(self.user.user_id, change_username)
             # If the username was already taken
             if not user_profile:
                 # Just get the original user profile
