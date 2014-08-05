@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block leaderboards-selected %}class="active"{% endblock %}
+{% block leaderboards-selected %} active{% endblock %}
 
 {% block add_head %}
 <script>
@@ -89,7 +89,9 @@ $( document ).ready(function() {
                                 <td>{{entry.medals|length}}</td>
                             {% endif %}
                             {% if not show_id %}
-                                <td><div class="level-medal pull-left"><div class="level-number">{{entry.level}}</div></div></td>
+                                <td>
+                                    <a href="/medals/#level-medal"><div class="level-medal pull-left"><div class="level-number">{{entry.level}}</div></div></a>
+                                </td>
                             {% endif %}
                         </tr>
                     {% endfor %}

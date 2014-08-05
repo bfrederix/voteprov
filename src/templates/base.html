@@ -48,7 +48,15 @@
                             </ul>
                         </li>
                     {% endif %}
-                    <li {% block leaderboards-selected %}{% endblock %}><a href="/leaderboards/">Leaderboards</a></li>
+                    <li class="dropdown{% block leaderboards-selected %}{% endblock %}">
+                        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                            Leaderboards <span class="caret"></span>
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a href="/leaderboards/"><strong>All-time Leaderboard</strong></a></li>
+                            <li><a href="/medals/"><strong>Medals</strong></a></li>
+                        </ul>
+                    </li>
     				{% if username %}
     				    <li {% block user-account-selected %}{% endblock %}><a href="/user/{{user.user_id}}/">My Account</a></li>
     				{% endif %}
