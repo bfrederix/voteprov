@@ -74,10 +74,6 @@ class ShowPage(ViewBase):
             # Toggle the lock/unlock
             show.locked = not show.locked
             show.put()
-        # Admin is showing the leaderboard
-        elif self.request.get('show_leaderboard') and self.context.get('is_admin', False):
-            show.showing_leaderboard = True
-            show.put()
         context = {'show': show,
                    'now_tz': back_to_tz(get_mountain_time()),
                    'host_url': self.request.host_url}
@@ -400,12 +396,11 @@ class JSTestPage(ViewBase):
         if style == 'player-options':
             if display == 'voting':
                 mock_data.update({'player_name': 'Freddy',
-                                  'player_photo': 'freddy.jpg',
+                                  'photo_filename': 'freddy.jpg',
                                   'options': three_options})
             else:
                 mock_data.update({'player_name': 'Freddy',
                                   'photo_filename': 'freddy.jpg',
-                                  'player_photo': 'freddy.jpg',
                                   'voted': state,
                                   'value': three_options[1]['value'],
                                   'count': three_options[1]['count'],

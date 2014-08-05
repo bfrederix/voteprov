@@ -1,8 +1,6 @@
 import json
 import datetime
 
-from google.appengine.ext import ndb
-
 from views_base import ViewBase
 from service import (get_show, get_suggestion_pool, get_suggestion,
                      get_suggestion_pool_page_suggestions,

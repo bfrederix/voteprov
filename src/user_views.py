@@ -2,14 +2,14 @@ import datetime
 import webapp2
 
 from google.appengine.ext.webapp import template
-from google.appengine.ext import ndb
+from google.appengine.api import users
 from google.appengine.api import taskqueue
 
 from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
-                     get_show, get_user_profile, fetch_shows,
-                     fetch_leaderboard_entries, fetch_user_profiles,
+                     get_show, get_user_profile, get_leaderboard_entry,
+                     fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
                      get_current_show, get_live_vote_exists,
                      create_live_vote, create_leaderboard_entry,
                      pre_show_voting_post,
@@ -36,12 +36,12 @@ class LiveVote(ViewBase):
         voted = True
         vote_num = int(self.request.get('vote_num', '0'))
         session_id = str(self.session.get('id'))
-        
         # Add the task to the default queue.
         taskqueue.add(url='/live_vote_worker/',
                       params={'show': self.context['current_show'],
                               'vote_num': vote_num,
-                              'session_id': session_id})
+                              'session_id': session_id,
+                              'user_id': self.user_id})
         show = get_current_show()
         context = {'vote_options': show.show_option_list}
         self.response.out.write(template.render(self.path('live_vote.html'),
@@ -59,6 +59,10 @@ class LiveVoteWorker(webapp2.RequestHandler):
         vote_type = show.current_vote_type.get()
         vote_num = int(self.request.get('vote_num'))
         session_id = self.request.get('session_id')
+        user_id = self.request.get('user_id')
+        # Catch string "None"
+        if user_id == "None":
+            user_id = None
         vote_data = show.current_vote_options(voting_only=True)
         # If we're in the voting period
         if vote_data.get('display') == 'voting':
@@ -67,23 +71,26 @@ class LiveVoteWorker(webapp2.RequestHandler):
                 voted_option = vote_data['options'][vote_num]
             except IndexError:
                 state = None
-        # Cast the interval to an int if it exists
-        if vote_data.get('interval'):
-            interval = int(vote_data.get('interval'))
-        # Get the suggestion key, if it exist
-        if voted_option.get('id'):
-            # If this is a player vote
-            if show.current_vote_type \
-                and vote_type.style in ['player-pool', 'all-players']:
-                player_key = get_player(key_id=voted_option.get('id'), key_only=True)
-            # else this is a non-player related suggestion vote
-            elif vote_type != 'player-options':
-                suggestion_key = get_suggestion(key_id=voted_option.get('id'), key_only=True)
-        # Get the player key elsewhere, if it exists
-        if vote_data.get('player_id'):
-            player_key = get_player(key_id=vote_data.get('player_id'), key_only=True)
         # If there is a voting state of some kind
         if state and state != 'default':
+            # Cast the interval to an int if it exists
+            if vote_data.get('interval'):
+                interval = int(vote_data.get('interval'))
+            # Get the suggestion key, if it exist
+            if voted_option.get('id'):
+                # If this is a player vote
+                if show.current_vote_type \
+                    and vote_type.style in ['player-pool', 'all-players']:
+                    player_key = get_player(key_id=voted_option.get('id'),
+                                            key_only=True)
+                # else this is a non-player related suggestion vote
+                elif vote_type != 'player-options':
+                    suggestion_key = get_suggestion(key_id=voted_option.get('id'),
+                                                    key_only=True)
+            # Get the player key elsewhere, if it exists
+            if vote_data.get('player_id'):
+                player_key = get_player(key_id=vote_data.get('player_id'),
+                                        key_only=True)
             # Determine if a live vote exists for this
             # show-vote_type-interval-player-session_id already
             vote_exists = get_live_vote_exists(show.key,
@@ -100,7 +107,7 @@ class LiveVoteWorker(webapp2.RequestHandler):
                                   'interval': interval,
                                   'session_id': session_id})
                 # If they are logged in, create a second live vote
-                if users.get_current_user():
+                if user_id:
                     create_live_vote({'suggestion': suggestion_key,
                                       'vote_type': show.current_vote_type,
                                       'player': player_key,
@@ -112,13 +119,14 @@ class LiveVoteWorker(webapp2.RequestHandler):
                     # Get the suggestion's user id
                     suggestion_user_id = suggestion_key.get().user_id
                     # If the current user is logged in
-                    if users.get_current_user():
+                    if user_id:
                         # Give the suggestion user two points
                         points = 2
                     else:
                         points = 1
                     leaderboard_entry = get_leaderboard_entry(show=show.key,
                                                               user_id=suggestion_user_id)
+                    print "leaderboard_entry, ", leaderboard_entry
                     # If a leaderboard entry exists for the suggestion user and show
                     if leaderboard_entry:
                         # Add the points to the suggestion user's leaderboard entry
@@ -155,7 +163,7 @@ class AddSuggestions(ViewBase):
     @redirect_locked
     def post(self, suggestion_pool_name):
         if self.current_user:
-            user_id = self.current_user.user_id()
+            user_id = self.user_id
         else:
             user_id = None
         current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
@@ -204,10 +212,6 @@ class ShowLeaderboard(ViewBase):
         # If user is an admin
         if self.context.get('is_admin', False):
             medals_exist = get_medals_exist(leaderboard_entries)
-            # Make sure to set the show leaderboard to hidden
-            #(thwart race condition on the show admin page)
-            show.showing_leaderboard = False
-            show.put()
         context = {'show_id': int(show_id),
                    'shows': fetch_shows(),
                    'leaderboard_entries': leaderboard_entries,
@@ -247,7 +251,7 @@ class UserAccount(ViewBase):
             leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
                                                           unique_by_user=True)[0]
         except IndexError:
-            leaderboard_stats = {'level': 1, 'points': 0, 'medals': 0, 'wins': 0,
+            leaderboard_stats = {'level': 1, 'points': 0, 'medals': [], 'wins': 0,
                                  'suggestions': 0}
         context = {'show_entries': show_entries,
                    'leaderboard_stats': leaderboard_stats,
@@ -275,7 +279,7 @@ class UserAccount(ViewBase):
             leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
                                                           unique_by_user=True)[0]
         except IndexError:
-            leaderboard_stats = {'level': 1, 'points': 0, 'medals': 0, 'wins': 0,
+            leaderboard_stats = {'level': 1, 'points': 0, 'medals': [], 'wins': 0,
                                  'suggestions': 0}
         context = {'show_entries': show_entries,
                    'leaderboard_stats': leaderboard_stats,

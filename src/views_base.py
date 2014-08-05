@@ -102,14 +102,22 @@ class ViewBase(webapp2.RequestHandler):
         return users.get_current_user()
     
     @property
+    def user_id(self):
+        """Returns currently logged in user's id"""
+        if self.current_user:
+            return self.current_user.user_id()
+        else:
+            return None
+    
+    @property
     def user_profile(self):
         """Returns currently logged in user"""
         if self.current_user:
             # Try to get the user profile
-            user_profile = get_user_profile(user_id=self.current_user.user_id())
+            user_profile = get_user_profile(user_id=self.user_id)
             if not user_profile:
                 # Create the userprofile
-                profile_key = create_user_profile({'user_id': self.current_user.user_id(),
+                profile_key = create_user_profile({'user_id': self.user_id,
                                                    'username': self.current_user.nickname(),
                                                    'created': get_mountain_time()})
                 # If the profile was created successfully

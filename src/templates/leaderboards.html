@@ -23,7 +23,7 @@ $( document ).ready(function() {
 	<div class="container-fluid">
 	    <form class="form-inline" role="form" action="/leaderboards/show/{{show_id}}/" method="post">
             <div class="form-group">
-                <label for="show">Show</label>
+                <label for="show">Show Leaderboards</label>
 	            <select id="show" class="form-control">
 	                <option value="">Select Show</option>
 	                {% for show in shows %}
@@ -75,14 +75,14 @@ $( document ).ready(function() {
                     {% for entry in leaderboard_entries %}
                         <tr>
                             <td>{{forloop.counter}}</td>
-                            <td>{{entry.username}}</td>
+                            <td><a class="white-link" href="/user/{{entry.user_id}}/">{{entry.username}}</a></td>
                             <td>{{entry.suggestions}}</td>
                             <td>{{entry.points}}</td>
                             <td>{{entry.wins}}</td>
                             {% if show_id %}
                                 <td>
                                 {% for medal in entry.medals %}
-                                    <div class="{{medal.name}}-medal pull-right"></div>
+                                    <div class="{{medal.get.name}}-medal pull-left"></div>
                                 {% endfor %}
                                 </td>
                             {% else %}

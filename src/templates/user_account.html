@@ -35,7 +35,10 @@
                         <hr/>
                         <div class="row">
                             <div class="col-md-12">
-                                Medals: {{leaderboard_stats.medals}}
+                                Medals:<br/>
+                                {% for medal in leaderboard_stats.medals %}
+                                    <div class="{{medal.get.name}}-medal pull-left"></div>
+                                {% endfor %}
                             </div>
                         </div>
                         <hr/>

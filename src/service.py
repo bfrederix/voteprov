@@ -1,5 +1,4 @@
 import datetime
-from operator import itemgetter
 
 from google.appengine.ext import ndb
 
@@ -150,7 +149,7 @@ def fetch_leaderboard_entries(**kwargs):
             user_dict[entry.user_id].setdefault('username', entry.username)
             user_dict[entry.user_id].setdefault('points', 0)
             user_dict[entry.user_id].setdefault('wins', 0)
-            user_dict[entry.user_id].setdefault('medals', 0)
+            user_dict[entry.user_id].setdefault('medals', [])
             user_dict[entry.user_id].setdefault('suggestions', 0)
             # Add the wins, points, medals, and suggestions for the user from this particular show
             user_dict[entry.user_id]['points'] += entry.points
@@ -166,8 +165,9 @@ def fetch_leaderboard_entries(**kwargs):
             user_data = {'user_id': user_id}
             user_data.update(value_dict)
             user_list.append(user_data)
+        print "user_list, ", user_list
         # Sort the list by points
-        return sorted(user_list, key=itemgetter('points'))
+        return sorted(user_list, key=lambda k: k['points'], reverse=True)
     else:
         return entries
 
@@ -243,7 +243,7 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
         ordering += [model.ordering]
     # Order by points
     if order_by_points:
-        ordering += [model.points]
+        ordering += [-model.points]
     # Order by the date the show occurred
     if order_by_show_date:
         ordering += [-model.show_date]
@@ -416,9 +416,13 @@ def add_medal(show, medal_name, user_id):
     if user_id:
         # Get the medal winner
         medal_winner = get_leaderboard_entry(show=show, user_id=user_id)
-        # Add the medal to the winner
-        medal_winner.medals.append(get_medal(name=medal_name))
-        medal_winner.put()
+        if medal_winner:
+            medal = get_medal(name=medal_name)
+            # If We have a medal winner and a medal
+            if medal:
+                # Add the medal to the winner
+                medal_winner.medals.append(medal.key)
+                medal_winner.put()
 
 
 def award_leaderboard_medals(show, test=None):
@@ -429,50 +433,51 @@ def award_leaderboard_medals(show, test=None):
         ### TEST MOCK ###
         leaderboard_entries = test
     medal_dict = {'points': {'max': 0, 'user_id': None},
-                  'points_with_wins': {'max': 0, 'user_id': None},
-                  'points_without_win': {'max': 0, 'user_id': None},
-                  'win_percentage': {'max': 0, 'user_id': None}}
+                  'points-with-wins': {'max': 0, 'user_id': None},
+                  'points-without-win': {'max': 0, 'user_id': None},
+                  'win-percentage': {'max': 0, 'user_id': None}}
     for entry in leaderboard_entries:
         # Determine if a user has reached a new high for points
         if entry.points > medal_dict['points']['max']:
             medal_dict['points']['max'] = entry.points
             medal_dict['points']['user_id'] = entry.user_id
         win_addition = entry.wins * 5
+        print "(entry.points + win_addition), ", (entry.points + win_addition)
         # Determine if a user has reached a new high for points with wins factored in
-        if (entry.points + win_addition) > medal_dict['points_with_wins']['max']:
-            medal_dict['points_with_wins']['max'] = entry.points + win_addition
-            medal_dict['points_with_wins']['user_id'] = entry.user_id
+        if (entry.points + win_addition) > medal_dict['points-with-wins']['max']:
+            medal_dict['points-with-wins']['max'] = entry.points + win_addition
+            medal_dict['points-with-wins']['user_id'] = entry.user_id
         # Determine if a user has reached a new high for points without a win
-        if not entry.wins and entry.points > medal_dict['points_without_win']['max']:
-            medal_dict['points_without_win']['max'] = entry.points
-            medal_dict['points_without_win']['user_id'] = entry.user_id
+        if not entry.wins and entry.points > medal_dict['points-without-win']['max']:
+            medal_dict['points-without-win']['max'] = entry.points
+            medal_dict['points-without-win']['user_id'] = entry.user_id
         try:
             win_percentage = int(100 * (float(entry.wins) / float(entry.suggestions)))
         except ZeroDivisionError:
             win_percentage = 0
         # Determine if a user has reached a new high for points with wins factored in
-        if win_percentage > medal_dict['win_percentage']['max']:
-            medal_dict['win_percentage']['max'] = win_percentage
-            medal_dict['win_percentage']['user_id'] = entry.user_id
+        if win_percentage > medal_dict['win-percentage']['max']:
+            medal_dict['win-percentage']['max'] = win_percentage
+            medal_dict['win-percentage']['user_id'] = entry.user_id
     
     if not test:
         # Award the points medal
         add_medal(show, 'points', medal_dict['points']['user_id'])
     
         # Award the points factored with wins medal
-        add_medal(show, 'points_with_wins', medal_dict['points_with_wins']['user_id'])
+        add_medal(show, 'points-with-wins', medal_dict['points-with-wins']['user_id'])
     
         # Award the points without a win medal
-        add_medal(show, 'points_without_win', medal_dict['points_without_win']['user_id'])
+        add_medal(show, 'points-without-win', medal_dict['points-without-win']['user_id'])
     
         # Award the win percentage medal
-        add_medal(show, 'win_percentage', medal_dict['win_percentage']['user_id'])
+        add_medal(show, 'win-percentage', medal_dict['win-percentage']['user_id'])
     ### TEST MOCK ###
     else:
         return [medal_dict['points']['user_id'],
-                medal_dict['points_with_wins']['user_id'],
-                medal_dict['points_without_win']['user_id'],
-                medal_dict['win_percentage']['user_id']]
+                medal_dict['points-with-wins']['user_id'],
+                medal_dict['points-without-win']['user_id'],
+                medal_dict['win-percentage']['user_id']]
 
 
 def update_user_profile(user_id, username):

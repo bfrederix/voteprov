@@ -226,7 +226,6 @@ class Show(ndb.Model):
     recap_type = ndb.KeyProperty(kind=VoteType, indexed=False)
     recap_init = ndb.DateTimeProperty(indexed=False)
     locked = ndb.BooleanProperty(default=False, indexed=False)
-    showing_leaderboard = ndb.BooleanProperty(default=False, indexed=False)
     
     @property
     def show_option_list(self):
@@ -364,7 +363,7 @@ class Show(ndb.Model):
             elif vote_type.style == 'player-options':
                 # Get the current player
                 current_player = self.get_player_by_interval(current_interval, vote_type.key)
-                vote_options.update({'player_photo': current_player.photo_filename,
+                vote_options.update({'photo_filename': current_player.photo_filename,
                                      'player_id': current_player.key.id()})
                 unused_suggestions = vote_type.get_randomized_unused_suggestions(self.key,
                                                                                  interval=current_interval)

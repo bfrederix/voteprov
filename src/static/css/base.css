@@ -217,15 +217,15 @@ hr.thick-divider {
 }
 
 .points-with-wins-medal {
-    background-image:url('/static/img/medals/points_with_wins-icon.png');
+    background-image:url('/static/img/medals/points-with-wins-icon.png');
 }
 
 .points-without-win-medal {
-    background-image:url('/static/img/medals/points_without_win-icon.png');
+    background-image:url('/static/img/medals/points-without-win-icon.png');
 }
 
 .win-percentage-medal {
-    background-image:url('/static/img/medals/win_percentage-icon.png');
+    background-image:url('/static/img/medals/win-percentage-icon.png');
 }
 
 .level-number {

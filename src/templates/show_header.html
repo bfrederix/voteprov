@@ -98,7 +98,7 @@ $( document ).ready(function() {
 		var style = voting_data['style'];
 		if (style == 'player-options') {
 			var thumbnail_column = $('<div class="col-sm-2 col-sm-offset-4 voting-interval-thumbnail"></div>');
-			var thumbnail_img = $('<img src="{{player_image_path}}' + voting_data['player_photo'] + '" class="img-responsive img-thumbnail" />');
+			var thumbnail_img = $('<img src="{{player_image_path}}' + voting_data['photo_filename'] + '" class="img-responsive img-thumbnail" />');
 			// Add the thumbnail column to the panel body row
 			$(element_id).append($(thumbnail_column)); //panel_body_row
 			// Add the player thumbnail image to the thumbnail row
@@ -135,12 +135,20 @@ $( document ).ready(function() {
 		var count_row = $('<div class="row text-center"></div>');
 		// Create the button that shows the count of votes
 		var option_count = $('<button class="btn btn-danger vote-option">' + voting_data['count'] + ' Votes!</button>');
-		$(count_row).append($(option_count));
+		// If there was more than zero votes for the item
+		if (voting_data['count'] > 0) {
+		    $(count_row).append($(option_count));
+		}
+		// If the user is attached to the suggestion
 		if ('username' in voting_data) {
-		    var spacer = $('<span>&nbsp;&nbsp;</span>');
-		    var by_user = $('<button class="btn btn-success vote-option">Submitted by ' + voting_data['username'] + '</button>');
-		    $(count_row).append($(spacer));
-		    $(count_row).append($(by_user));
+		    // If the username isn't null or undefined, add it to the footer
+		    if (!voting_data['username']) {}
+		    else {
+                var spacer = $('<span>&nbsp;&nbsp;</span>');
+                var by_user = $('<button class="btn btn-success vote-option">Submitted by ' + voting_data['username'] + '</button>');
+                $(count_row).append($(spacer));
+                $(count_row).append($(by_user));
+            }
 		}
 		// Add the row to the element
 		$(element_id).append($(row));
@@ -150,7 +158,9 @@ $( document ).ready(function() {
 		$(column).append($(panel));
 		// Add the panel header to the panel
 		$(panel).append($(panel_header));
-		if (is_defined(thumbnail_column)) {
+		// If the thumbnail column exists, add the body panel
+		if (!thumbnail_column) {}
+		else {
             // Add the panel body to the panel
             $(panel).append($(panel_body));
         }
