@@ -10,16 +10,20 @@ $( document ).ready(function() {
             window.location.href = this.value;
         }        
     };
+    /*
     document.getElementById("year").onchange = function() {
         if (this.selectedIndex!==0) {
             window.location.href = this.value;
         }        
     };
+    */
 });
 </script>
 {% endblock %}
 
 {% block content %}
+    {% include "facebook_sdk.html" %}
+    
 	<div class="container-fluid">
 	    <form class="form-inline" role="form" action="/leaderboards/show/{{show_id}}/" method="post">
             <div class="form-group">
@@ -83,6 +87,9 @@ $( document ).ready(function() {
                                 <td>
                                 {% for medal in entry.medals %}
                                     <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
+                                    {% if entry.user_id == user.user_id %}
+                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', '{{medal.get.display_name}}', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
+                                    {% endif %}
                                 {% endfor %}
                                 </td>
                             {% else %}
@@ -90,6 +97,9 @@ $( document ).ready(function() {
                             {% endif %}
                             {% if not show_id %}
                                 <td>
+                                    {% if entry.user_id == user.user_id %}
+                                        <img class="facebook-share" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Level {{entry.level}}', 'For reaching Level {{entry.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
+                                    {% endif %}
                                     <a href="/medals/#level-medal"><div class="level-medal pull-left"><div class="level-number">{{entry.level}}</div></div></a>
                                 </td>
                             {% endif %}

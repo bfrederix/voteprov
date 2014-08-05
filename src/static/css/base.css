@@ -247,3 +247,9 @@ img.medal-resize {
     width:100%;
     height: auto;
 }
+
+.facebook-share {
+    cursor: pointer;
+    cursor: hand;
+    margin-top: 20px;
+}

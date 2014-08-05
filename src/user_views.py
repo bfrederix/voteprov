@@ -126,7 +126,6 @@ class LiveVoteWorker(webapp2.RequestHandler):
                         points = 1
                     leaderboard_entry = get_leaderboard_entry(show=show.key,
                                                               user_id=suggestion_user_id)
-                    print "leaderboard_entry, ", leaderboard_entry
                     # If a leaderboard entry exists for the suggestion user and show
                     if leaderboard_entry:
                         # Add the points to the suggestion user's leaderboard entry

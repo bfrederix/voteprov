@@ -1,0 +1,36 @@
+<div id="fb-root"></div>
+<script>
+  window.fbAsyncInit = function() {
+    FB.init({
+      appId      : '518259704940406',
+      xfbml      : true,
+      status     : true,
+      cookie     : true
+    });
+  };
+  
+  // Load the SDK Asynchronously
+  (function(d){
+     var js, id = 'facebook-jssdk', ref = d.getElementsByTagName('script')[0];
+     if (d.getElementById(id)) {return;}
+     js = d.createElement('script'); js.id = id; js.async = true;
+     js.src = "//connect.facebook.net/en_US/all.js";
+     ref.parentNode.insertBefore(js, ref);
+   }(document));
+   
+  function medal_share(link, picture, name, caption, description) {
+      // calling the API ...
+      var obj = {
+        method: 'feed',
+        link: link, 
+        picture: picture,
+        name: name,
+        caption: caption,
+        description: description
+      };
+      function callback(response) {
+        //Doing nothing for now
+      }
+      FB.ui(obj, callback);
+  }
+</script>

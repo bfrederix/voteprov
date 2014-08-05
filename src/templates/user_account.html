@@ -3,6 +3,7 @@
 {% block user-account-selected %}class="active"{% endblock %}
 
 {% block content %}
+    {% include "facebook_sdk.html" %}
 	<div class="container-fluid">
 	    <div class="row">
 	        <div class="col-md-6 col-md-offset-3">
@@ -17,7 +18,11 @@
                         <hr/>
                         <div class="row">
                             <div class="col-md-3">
-                                Level: <a href="/medals/#level-medal"><div class="level-medal pull-right"><div class="level-number">{{leaderboard_stats.level}}</div></div></a>
+                                Level:
+                                {% if page_user_id == user.user_id %}
+                                    <img class="facebook-share pull-right" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Level {{leaderboard_stats.level}}', 'For reaching Level {{leaderboard_stats.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
+                                {% endif %}
+                                <a href="/medals/#level-medal"><div class="level-medal"><div class="level-number">{{leaderboard_stats.level}}</div></div></a>
                             </div>
                         </div>
                         <hr/>
@@ -38,6 +43,9 @@
                                 Medals:<br/>
                                 {% for medal in leaderboard_stats.medals %}
                                     <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
+                                    {% if page_user_id == user.user_id %}
+                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', '{{medal.get.display_name}}', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
+                                    {% endif %}
                                 {% endfor %}
                             </div>
                         </div>

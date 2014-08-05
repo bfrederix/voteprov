@@ -165,7 +165,6 @@ def fetch_leaderboard_entries(**kwargs):
             user_data = {'user_id': user_id}
             user_data.update(value_dict)
             user_list.append(user_data)
-        print "user_list, ", user_list
         # Sort the list by points
         return sorted(user_list, key=lambda k: k['points'], reverse=True)
     else:
@@ -446,7 +445,6 @@ def award_leaderboard_medals(show, test=None):
             medal_dict['points']['max'] = entry.points
             medal_dict['points']['user_id'] = entry.user_id
         win_addition = entry.wins * 5
-        print "(entry.points + win_addition), ", (entry.points + win_addition)
         # Determine if a user has reached a new high for points with wins factored in
         if (entry.points + win_addition) > medal_dict['points-with-wins']['max']:
             medal_dict['points-with-wins']['max'] = entry.points + win_addition
