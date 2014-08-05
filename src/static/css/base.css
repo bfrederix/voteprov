@@ -180,6 +180,10 @@ hr.thick-divider {
     font-weight:bold;
 }
 
+.black-font {
+    color: #000000;
+}
+
 .caret-up {
     margin-left:20px;
     margin-top:2px;

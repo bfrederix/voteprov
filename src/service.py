@@ -481,6 +481,15 @@ def award_leaderboard_medals(show, test=None):
                 medal_dict['win_percentage']['user_id']]
 
 
+def update_user_profile(user_id, username):
+    user_profile = get_user_profile(user_id=user_id)
+    if not get_user_profile(username=username):
+        user_profile.username = username
+        return user_profile.put().get()
+    else:
+        return None
+
+
 def test_leaderboard_entries():
     return [
         type('LeaderboardEntry',(object,), dict(user_id=1, points=30, wins=1, user_suggestions=10, show_date=datetime.datetime.now(), username='user1')),

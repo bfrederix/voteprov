@@ -8,13 +8,13 @@ from google.appengine.api import taskqueue
 from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
-                     get_show, fetch_shows,
+                     get_show, get_user_profile, fetch_shows,
                      fetch_leaderboard_entries, fetch_user_profiles,
                      get_current_show, get_live_vote_exists,
                      create_live_vote, create_leaderboard_entry,
                      pre_show_voting_post,
                      get_suggestion_pool_page_suggestions,
-                     award_leaderboard_medals)
+                     award_leaderboard_medals, update_user_profile)
 
 
 class MainPage(ViewBase):
@@ -220,18 +220,56 @@ class ShowLeaderboard(ViewBase):
 class UserAccount(ViewBase):
     @redirect_locked
     def get(self, user_id):
-        user_profiles = fetch_user_profiles(user_id=self.current_user.user_id())
+        user_profiles = fetch_user_profiles(user_id=user_id)
         # Set the user profile as the first user profile found
         user_profile = user_profiles[0]
         # IF a duplicate user profile was created, delete it!!
         if len(user_profiles) > 1:
             user_profiles[1].key.delete()
         if self.request.get('test'):
+            show_entries = test_leaderboard_entries()
             leaderboard_entries = test_leaderboard_entries()
         else:
-            leaderboard_entries = fetch_leaderboard_entries(user_id=user_id,
-                                                        order_by_show_date=True)
-        context = {'leaderboard_entries': leaderboard_entries,
-                   'user_profile': user_profile}
+            show_entries = fetch_leaderboard_entries(user_id=user_id,
+                                                     order_by_show_date=True)
+            try:
+                leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
+                                                              unique_by_user=True)[0]
+            except IndexError:
+                leaderboard_stats = {'points': 0, 'medals': 0, 'wins': 0,
+                                     'suggestions': 0}
+        context = {'show_entries': show_entries,
+                   'leaderboard_stats': leaderboard_stats,
+                   'user_profile': user_profile,
+                   'page_user_id': user_id}
+        self.response.out.write(template.render(self.path('user_account.html'),
+                                                self.add_context(context)))
+    
+    @redirect_locked
+    def post(self, user_id):
+        update = 'unchanged'
+        change_username = self.request.get('change_username')
+        if change_username:
+            # Update the user profile with the new username
+            user_profile = update_user_profile(self.user_profile.user_id, change_username)
+            # If the username was already taken
+            if not user_profile:
+                # Just get the original user profile
+                user_profile = get_user_profile(user_id=user_id)
+            else:
+                update = 'changed'
+        show_entries = fetch_leaderboard_entries(user_id=user_id,
+                                                 order_by_show_date=True)
+        try:
+            leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
+                                                          unique_by_user=True)[0]
+        except IndexError:
+            leaderboard_stats = {'points': 0, 'medals': 0, 'wins': 0,
+                                 'suggestions': 0}
+        context = {'show_entries': show_entries,
+                   'leaderboard_stats': leaderboard_stats,
+                   'user_profile': user_profile,
+                   'page_user_id': user_id,
+                   'update': update}
         self.response.out.write(template.render(self.path('user_account.html'),
                                                 self.add_context(context)))
