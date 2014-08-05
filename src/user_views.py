@@ -185,33 +185,48 @@ class Leaderboards(ViewBase):
                                                 self.add_context(context)))
 
 
+def get_medals_exist(leaderboard_entries):
+    for entry in leaderboard_entries:
+        if len(entry.medals) > 0:
+            return True
+    return False
+
+
 # Used to handle the show leaderboard url properly
 class ShowLeaderboard(ViewBase):
     @redirect_locked
     def get(self, show_id):
+        medals_exist = True
         show = get_show(key_id=show_id)
         leaderboard_entries = fetch_leaderboard_entries(show=show.key,
-                                                     order_by_points=True)
+                                                        order_by_points=True,
+                                                        test=self.request.get('test'))
         # If user is an admin
         if self.context.get('is_admin', False):
+            medals_exist = get_medals_exist(leaderboard_entries)
             # Make sure to set the show leaderboard to hidden
             #(thwart race condition on the show admin page)
             show.showing_leaderboard = False
             show.put()
         context = {'show_id': int(show_id),
                    'shows': fetch_shows(),
-                   'leaderboard_entries': leaderboard_entries}
+                   'leaderboard_entries': leaderboard_entries,
+                   'medals_exist': medals_exist}
         self.response.out.write(template.render(self.path('leaderboards.html'),
                                                 self.add_context(context)))
     
     @admin_required
     def post(self, show_id):
+        show = get_show(key_id=show_id)
         if self.request.get('award_medals'):
             # Set the medals awarded to the users
-            award_leaderboard_medals(show)
+            award_leaderboard_medals(show.key)
         leaderboard_entries = fetch_leaderboard_entries(show=show.key,
                                                         order_by_points=True)
-        context = {'leaderboard_entries': leaderboard_entries}
+        context = {'show_id': int(show_id),
+                   'shows': fetch_shows(),
+                   'leaderboard_entries': leaderboard_entries,
+                   'medals_exist': get_medals_exist(leaderboard_entries)}
         self.response.out.write(template.render(self.path('leaderboards.html'),
                                                 self.add_context(context)))
 
@@ -260,7 +275,7 @@ class UserAccount(ViewBase):
             leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
                                                           unique_by_user=True)[0]
         except IndexError:
-            leaderboard_stats = {'points': 0, 'medals': 0, 'wins': 0,
+            leaderboard_stats = {'level': 1, 'points': 0, 'medals': 0, 'wins': 0,
                                  'suggestions': 0}
         context = {'show_entries': show_entries,
                    'leaderboard_stats': leaderboard_stats,

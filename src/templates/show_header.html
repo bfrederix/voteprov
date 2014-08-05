@@ -136,6 +136,12 @@ $( document ).ready(function() {
 		// Create the button that shows the count of votes
 		var option_count = $('<button class="btn btn-danger vote-option">' + voting_data['count'] + ' Votes!</button>');
 		$(count_row).append($(option_count));
+		if ('username' in voting_data) {
+		    var spacer = $('<span>&nbsp;&nbsp;</span>');
+		    var by_user = $('<button class="btn btn-success vote-option">Submitted by ' + voting_data['username'] + '</button>');
+		    $(count_row).append($(spacer));
+		    $(count_row).append($(by_user));
+		}
 		// Add the row to the element
 		$(element_id).append($(row));
 		// Add the column to the row
@@ -144,8 +150,10 @@ $( document ).ready(function() {
 		$(column).append($(panel));
 		// Add the panel header to the panel
 		$(panel).append($(panel_header));
-		// Add the panel body to the panel
-		//$(panel).append($(panel_body));
+		if (is_defined(thumbnail_column)) {
+            // Add the panel body to the panel
+            $(panel).append($(panel_body));
+        }
 		// Add the thumbnail row to the panel body
 		$(panel_body).append($(panel_body_row));
 		// Add the panel footer to the panel

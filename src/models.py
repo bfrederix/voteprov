@@ -488,6 +488,8 @@ class Show(ndb.Model):
                                               player=current_player.key,
                                               suggestion=winning_suggestion.key,
                                               interval=current_interval).put().get()
+                    # Add the win to the leaderboard for the user
+                    current_voted.add_leaderboard_win()
                     # Mark the suggestion as used
                     winning_suggestion.used = True
                     winning_suggestion.put()
@@ -500,6 +502,7 @@ class Show(ndb.Model):
                 vote_options['voted'] = vote_type.name
                 vote_options['photo_filename'] = current_player.photo_filename
                 vote_options['value'] = current_voted.suggestion.get().value
+                vote_options['username'] = current_voted.suggestion.get().username
                 vote_options['count'] = winning_count
             elif vote_type.style == 'options':
                 # The winning suggestion hasn't been selected
@@ -522,6 +525,8 @@ class Show(ndb.Model):
                                               show=self.key,
                                               suggestion=winning_suggestion.key,
                                               interval=current_interval).put().get()
+                    # Add the win to the leaderboard for the user
+                    current_voted.add_leaderboard_win()
                     # Mark the suggestion as used
                     winning_suggestion.used = True
                     winning_suggestion.put()
@@ -533,6 +538,7 @@ class Show(ndb.Model):
                                                                   interval=current_interval)
                 vote_options['voted'] = vote_type.name
                 vote_options['value'] = current_voted.suggestion.get().value
+                vote_options['username'] = current_voted.suggestion.get().username
                 vote_options['count'] = winning_count
             elif vote_type.style == 'test':
                 # The winning suggestion hasn't been selected
@@ -586,6 +592,7 @@ class Show(ndb.Model):
                     winning_count = current_voted.suggestion.get().preshow_value
                 vote_options['voted'] = vote_type.name
                 vote_options['value'] = current_voted.suggestion.get().value
+                vote_options['username'] = current_voted.suggestion.get().username
                 vote_options['count'] = winning_count
         return vote_options
     
@@ -622,7 +629,13 @@ class Suggestion(ndb.Model):
         """Determine which sessions have voted for this suggestion pre-show"""
         psv = PreshowVote.query(PreshowVote.suggestion == self.key).fetch()
         return [x.session_id for x in psv]
-        
+    
+    @property
+    def username(self):
+        user_profile = UserProfile.query(UserProfile.user_id == self.user_id).get()
+        if user_profile:
+            return user_profile.username
+        return None
 
     def put(self, *args, **kwargs):
         if not self.created:
@@ -685,16 +698,36 @@ class VotedItem(ndb.Model):
     player = ndb.KeyProperty(kind=Player)
     interval = ndb.IntegerProperty(default=None)
 
+    def add_leaderboard_win(self):
+        # Get the user that created the suggestion (if there was one)
+        if self.suggestion:
+            user_id = self.suggestion.get().user_id
+            # If there was a user attached to the suggestion
+            if user_id:
+                entry = LeaderboardEntry.query(LeaderboardEntry.show == self.show,
+                                               LeaderboardEntry.user_id == user_id).get()
+                # If a leaderboard entry already exists for this user
+                if entry:
+                    # Add the win
+                    entry.wins += 1
+                    entry.put()
+
 
 class Medal(ndb.Model):
     name = ndb.StringProperty(required=True)
     display_name = ndb.StringProperty(required=True)
     description = ndb.TextProperty(required=True, indexed=False)
     image_filename = ndb.StringProperty(required=True)
+    icon_filename = ndb.StringProperty(required=True)
 
     @property
     def img_path(self):
         return "/static/img/medals/%s" % self.image_filename
+    
+    @property
+    def icon_path(self):
+        return "/static/img/medals/%s" % self.icon_filename
+
 
 class LeaderboardEntry(ndb.Model):
     show = ndb.KeyProperty(kind=Show, required=True)
@@ -707,8 +740,20 @@ class LeaderboardEntry(ndb.Model):
     @property
     def username(self):
         return UserProfile.query(UserProfile.user_id == self.user_id).get().username
+    
+    @property
+    def suggestions(self):
+        return Suggestion.query(Suggestion.show == self.show,
+                                Suggestion.user_id == self.user_id).count()
+
 
 class UserProfile(ndb.Model):
     user_id = ndb.StringProperty(required=True)
     username = ndb.StringProperty(default=None)
+    strip_username = ndb.StringProperty(default=None)
     created = ndb.DateTimeProperty(required=True)
+
+    def put(self, *args, **kwargs):
+        if self.username:
+            self.strip_username = self.username.replace(" ", "").lower()
+        return super(UserProfile, self).put(*args, **kwargs)

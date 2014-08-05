@@ -395,7 +395,8 @@ class JSTestPage(ViewBase):
                          (object,),
                          dict(is_today = True,
                               vote_types=fetch_vote_types()))
-        mock_data = {'state': state, 'display': display, 'style': style}
+        mock_data = {'state': state, 'display': display, 'style': style,
+                     'display_name': state}
         if style == 'player-options':
             if display == 'voting':
                 mock_data.update({'player_name': 'Freddy',
@@ -403,10 +404,12 @@ class JSTestPage(ViewBase):
                                   'options': three_options})
             else:
                 mock_data.update({'player_name': 'Freddy',
+                                  'photo_filename': 'freddy.jpg',
                                   'player_photo': 'freddy.jpg',
                                   'voted': state,
                                   'value': three_options[1]['value'],
-                                  'count': three_options[1]['count']})
+                                  'count': three_options[1]['count'],
+                                  'username': 'Dude Guy'})
         elif style == 'test':
             if display == 'voting':
                 mock_data.update({'options': five_options})
@@ -420,7 +423,8 @@ class JSTestPage(ViewBase):
             else:
                 mock_data.update({'voted': state,
                 				  'value': five_options[1]['value'],
-                                  'count': five_options[1]['count']})
+                                  'count': five_options[1]['count'],
+                                  'username': 'Sparky'})
         elif style == 'all-players' or style == 'player-pool':
             if display == 'voting':
                 player_num = int(self.request.get('players', '8'))

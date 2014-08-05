@@ -21,7 +21,7 @@ $( document ).ready(function() {
 
 {% block content %}
 	<div class="container-fluid">
-	    <form class="form-inline" role="form">
+	    <form class="form-inline" role="form" action="/leaderboards/show/{{show_id}}/" method="post">
             <div class="form-group">
                 <label for="show">Show</label>
 	            <select id="show" class="form-control">
@@ -37,6 +37,13 @@ $( document ).ready(function() {
 					<div class="btn btn-primary btn-block btn-lg home-show-btn">&nbsp;All-time Leaderboards&nbsp;</div>
 				</a>
             </div>
+            {% if show_id and is_admin and not medals_exist %}
+                &nbsp;
+                <div class="form-group">
+                    <input type="hidden" name="award_medals" value="True">
+				    <input type="submit" class="btn btn-warning btn-block btn-lg x-large-font" value="&nbsp;Award Medals&nbsp;">
+                </div>
+            {% endif %}
             {% comment %}
             <div class="form-group">
                 <label for="year">Year</label>
@@ -50,7 +57,7 @@ $( document ).ready(function() {
             {% endcomment %}
         </form>
         <div class="table-responsive">
-            <table class="table table-striped table-bordered">
+            <table class="table table-condensed">
                 <thead>
                     <tr>
                         <th>Rank</th>
@@ -59,19 +66,33 @@ $( document ).ready(function() {
                         <th>Points</th>
                         <th>Winning Suggestions</th>
                         <th>Medals</th>
+                        {% if not show_id %}
+                            <th>Level</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
-                    <tr>
-                        {% for entry in leaderboard_entries %}
+                    {% for entry in leaderboard_entries %}
+                        <tr>
                             <td>{{forloop.counter}}</td>
                             <td>{{entry.username}}</td>
                             <td>{{entry.suggestions}}</td>
                             <td>{{entry.points}}</td>
                             <td>{{entry.wins}}</td>
-                            <td>{{entry.medals|length}}</td>
-                        {% endfor %}
-                    </tr>
+                            {% if show_id %}
+                                <td>
+                                {% for medal in entry.medals %}
+                                    <div class="{{medal.name}}-medal pull-right"></div>
+                                {% endfor %}
+                                </td>
+                            {% else %}
+                                <td>{{entry.medals|length}}</td>
+                            {% endif %}
+                            {% if not show_id %}
+                                <td>{{entry.level}}</td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>

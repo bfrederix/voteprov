@@ -199,13 +199,33 @@ hr.thick-divider {
 	border-bottom: 15px solid black;
 }
 
-.level-medal {
+.level-medal, .points-medal, .points-with-wins-medal, .points-without-win-medal,
+.win-percentage-medal {
     position: relative;
-    background-image:url('/static/img/medals/rank-icon.png');
     background-position: left center;
     background-repeat: no-repeat;
     width: 52px;
     height: 52px;
+}
+
+.level-medal {
+    background-image:url('/static/img/medals/rank-icon.png');
+}
+
+.points-medal {
+    background-image:url('/static/img/medals/points-icon.png');
+}
+
+.points-with-wins-medal {
+    background-image:url('/static/img/medals/points_with_wins-icon.png');
+}
+
+.points-without-win-medal {
+    background-image:url('/static/img/medals/points_without_win-icon.png');
+}
+
+.win-percentage-medal {
+    background-image:url('/static/img/medals/win_percentage-icon.png');
 }
 
 .level-number {
