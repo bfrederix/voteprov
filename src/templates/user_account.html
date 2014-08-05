@@ -20,7 +20,7 @@
                             <div class="col-md-3">
                                 Level:
                                 {% if page_user_id == user.user_id %}
-                                    <img class="facebook-share pull-right" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Level {{leaderboard_stats.level}}', 'For reaching Level {{leaderboard_stats.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
+                                    <img class="facebook-share pull-right" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Adventure-prov Level {{leaderboard_stats.level}} Medal', 'For reaching Level {{leaderboard_stats.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
                                 {% endif %}
                                 <a href="/medals/#level-medal"><div class="level-medal"><div class="level-number">{{leaderboard_stats.level}}</div></div></a>
                             </div>
@@ -44,7 +44,7 @@
                                 {% for medal in leaderboard_stats.medals %}
                                     <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
                                     {% if page_user_id == user.user_id %}
-                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', '{{medal.get.display_name}}', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
+                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', 'Adventure-prov {{medal.get.display_name}} Medal', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
                                     {% endif %}
                                 {% endfor %}
                             </div>

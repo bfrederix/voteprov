@@ -88,7 +88,7 @@ $( document ).ready(function() {
                                 {% for medal in entry.medals %}
                                     <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
                                     {% if entry.user_id == user.user_id %}
-                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', '{{medal.get.display_name}}', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
+                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', 'Adventure-prov {{medal.get.display_name}} Medal', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
                                     {% endif %}
                                 {% endfor %}
                                 </td>
@@ -98,7 +98,7 @@ $( document ).ready(function() {
                             {% if not show_id %}
                                 <td>
                                     {% if entry.user_id == user.user_id %}
-                                        <img class="facebook-share" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Level {{entry.level}}', 'For reaching Level {{entry.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
+                                        <img class="facebook-share" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Adventure-prov Level {{entry.level}} Medal', 'For reaching Level {{entry.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
                                     {% endif %}
                                     <a href="/medals/#level-medal"><div class="level-medal pull-left"><div class="level-number">{{entry.level}}</div></div></a>
                                 </td>
