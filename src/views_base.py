@@ -40,28 +40,7 @@ def redirect_locked(func):
     return decorated_view
 
 
-class ViewBase(webapp2.RequestHandler):
-    def __init__(self, *args, **kwargs):
-        super(ViewBase, self).__init__(*args, **kwargs)
-        self.app = webapp2.get_app()
-        auth_url, auth_action = self.get_auth_data()
-        self.current_show = get_current_show()
-        self.context = {
-                    'host_domain': self.request.host_url.replace('http://', ''),
-                    'image_path': self.app.registry.get('images'),
-                    'css_path': self.app.registry.get('css'),
-                    'js_path': self.app.registry.get('js'),
-                    'audio_path': self.app.registry.get('audio'),
-                    'player_image_path': self.app.registry.get('player_images'),
-                    'is_admin': users.is_current_user_admin(),
-                    'user': self.user,
-                    'username': self.username,
-                    'auth_url': auth_url,
-                    'auth_action': auth_action,
-                    'path_qs': self.request.path_qs,
-                    'current_show': self.current_show,
-                    'show_today': bool(self.current_show),
-                    'current_suggestion_pools': get_current_suggestion_pools(self.current_show)}
+class ViewBase(webapp2.RequestHandler):        
     
     def get_auth_data(self):
         """Used to get the auth action and the auth url
@@ -96,7 +75,7 @@ class ViewBase(webapp2.RequestHandler):
             user_profile = get_user_profile(user_id=user.user_id())
             # If we've found the user profile, update the session
             if user_profile:
-                user_profile.current_session = self.session.get('id')
+                user_profile.current_session = str(self.session.get('id'))
                 user_profile.put()
                 return user_profile
             else:
@@ -104,7 +83,7 @@ class ViewBase(webapp2.RequestHandler):
                 user_profile = get_user_profile(email=user.email())
                 if user_profile:
                     # If the profile was found by email, set the current session
-                    user_profile.current_session = self.session.get('id')
+                    user_profile.current_session = str(self.session.get('id'))
                     user_profile.put()
                     return user_profile
                 else:
@@ -117,11 +96,12 @@ class ViewBase(webapp2.RequestHandler):
         return None
     
     def add_context(self, add_context={}):
-        self.context.update(add_context)
-        return self.context
+        new_context = self.context.copy()
+        new_context.update(add_context)
+        return new_context
     
     def path(self, filename):
-        return os.path.join(self.app.registry.get('templates'), filename)
+        return os.path.join(webapp2.get_app().registry.get('templates'), filename)
 
     def dispatch(self):
         self.session_store = sessions.get_store(request=self.request)
@@ -138,17 +118,17 @@ class ViewBase(webapp2.RequestHandler):
             session['id'] = random.getrandbits(128)
         return session
     
-    @property
+    @webapp2.cached_property
     def user_id(self):
         """Returns currently logged in user's id"""
         return getattr(self.user, 'user_id', None)
     
-    @property
+    @webapp2.cached_property
     def username(self):
         """Returns currently logged in user's id"""
         return getattr(self.user, 'username', None)
     
-    @property
+    @webapp2.cached_property
     def user(self):
         """Returns currently logged in user"""
         # Try to get the user profile by session id
@@ -156,6 +136,31 @@ class ViewBase(webapp2.RequestHandler):
         if user_profile:
             return user_profile
         return None
+
+    @webapp2.cached_property
+    def current_show(self):
+        return get_current_show()
+    
+    @property
+    def context(self):
+        app = webapp2.get_app()
+        auth_url, auth_action = self.get_auth_data()
+        return {
+                'host_domain': self.request.host_url.replace('http://', ''),
+                'image_path': app.registry.get('images'),
+                'css_path': app.registry.get('css'),
+                'js_path': app.registry.get('js'),
+                'audio_path': app.registry.get('audio'),
+                'player_image_path': app.registry.get('player_images'),
+                'is_admin': users.is_current_user_admin(),
+                'user': self.user,
+                'username': self.username,
+                'auth_url': auth_url,
+                'auth_action': auth_action,
+                'path_qs': self.request.path_qs,
+                'current_show': self.current_show,
+                'show_today': bool(self.current_show),
+                'current_suggestion_pools': get_current_suggestion_pools(self.current_show)}
 
 
 class RobotsTXT(webapp2.RequestHandler):
