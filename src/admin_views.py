@@ -8,11 +8,12 @@ from google.appengine.ext.webapp import template
 from views_base import ViewBase, get_or_default, admin_required
 
 from service import (get_suggestion, get_player, get_show,
-                     get_vote_type, get_voted_item,
+                     get_vote_type, get_voted_item, get_medal,
                      fetch_suggestions, get_suggestion_pool,
                      fetch_players, fetch_preshow_votes, fetch_vote_options,
                      fetch_shows, fetch_live_votes, fetch_suggestion_pools,
                      fetch_vote_types, fetch_voted_items, fetch_show_intervals,
+                     fetch_medals, create_medal,
                      create_show, create_show_interval, create_suggestion_pool,
                      create_vote_type, create_player,
                      get_unused_suggestions, VOTE_STYLE, OCCURS_TYPE,
@@ -244,6 +245,37 @@ class SuggestionPools(ViewBase):
         context = {'suggestion_pools': fetch_suggestion_pools(),
                    'action': action}
         self.response.out.write(template.render(self.path('suggestion_pools.html'),
+                                                self.add_context(context)))
+
+
+class CreateMedals(ViewBase):
+    @admin_required
+    def get(self):
+        context = {'medals': fetch_medals()}
+        self.response.out.write(template.render(self.path('create_medals.html'),
+                                                self.add_context(context)))
+
+    @admin_required
+    def post(self):
+        action = None
+        medal_ids = self.request.get('medal_ids')
+        # Delete selected medals
+        if medal_ids:
+            for medal_id in medal_ids:
+                medal_key = get_medal(key_id=medal_id, key_only=True)
+                medal_key.delete()
+            action = 'deleted'
+        # Create Medal
+        elif self.request.get('name'):
+            create_medal({'name': self.request.get('name'),
+                          'display_name': self.request.get('display_name'),
+                          'description': self.request.get('description'),
+                          'image_filename': self.request.get('image_filename'),
+                          'icon_filename': self.request.get('icon_filename')})
+            action = 'created'
+        context = {'medals': fetch_medals(),
+                   'action': action}
+        self.response.out.write(template.render(self.path('create_medals.html'),
                                                 self.add_context(context)))
 
 

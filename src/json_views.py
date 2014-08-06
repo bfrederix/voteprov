@@ -64,3 +64,21 @@ class UpvoteJSON(ViewBase):
                                  'session_id': session_id})
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps({}))
+
+
+class SessionLogout(ViewBase):
+    def post(self):
+        """Used to handle logging out for google"""
+        # Reset the session
+        self.session_reset()
+        self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        self.response.out.write(json.dumps(True))
+
+
+class FacebookLogin(ViewBase):
+    def post(self):
+        """Used to handle Facebook login"""
+        self.facebook_login(self.request.get('user_id'),
+                            self.request.get('email'))
+        self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        self.response.out.write(json.dumps(True))

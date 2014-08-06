@@ -69,6 +69,7 @@ class ViewBase(webapp2.RequestHandler):
            or create the initial user profile
         """
         user = users.get_current_user()
+        #print "user, ", user
         # If the user is logged in via Google
         if user:
             # Try to get the user profile by user id
@@ -91,8 +92,40 @@ class ViewBase(webapp2.RequestHandler):
                     user_profile = create_user_profile({'user_id': user.user_id(),
                                                         'email': user.email(),
                                                         'username': user.nickname(),
-                                                        'created': get_mountain_time()})
+                                                        'created': get_mountain_time(),
+                                                        'current_session': str(self.session.get('id'))})
                     return user_profile.get()
+        return None
+    
+    def facebook_login(self, user_id, email):
+        """Used to login and update the user profile session
+           or create the initial user profile
+        """
+        if not user_id:
+            return None
+        # Try to get the user profile by user id
+        user_profile = get_user_profile(user_id=str(user_id))
+        # If we've found the user profile, update the session
+        if user_profile:
+            user_profile.current_session = str(self.session.get('id'))
+            user_profile.put()
+            return user_profile
+        else:
+            # Try to get the user profile by email
+            user_profile = get_user_profile(email=email)
+            if user_profile:
+                # If the profile was found by email, set the current session
+                user_profile.current_session = str(self.session.get('id'))
+                user_profile.put()
+                return user_profile
+            else:
+                # Create the userprofile from the google login
+                user_profile = create_user_profile({'user_id': user_id,
+                                                    'email': email,
+                                                    'username': email,
+                                                    'created': get_mountain_time(),
+                                                    'current_session': str(self.session.get('id'))})
+                return user_profile.get()
         return None
     
     def add_context(self, add_context={}):
@@ -131,8 +164,10 @@ class ViewBase(webapp2.RequestHandler):
     @webapp2.cached_property
     def user(self):
         """Returns currently logged in user"""
+        #print self.request.referer
         # Try to get the user profile by session id
         user_profile = get_user_profile(current_session=self.session.get('id', '-1'))
+        #print "user_profile, ", user_profile
         if user_profile:
             return user_profile
         return None
@@ -161,6 +196,11 @@ class ViewBase(webapp2.RequestHandler):
                 'current_show': self.current_show,
                 'show_today': bool(self.current_show),
                 'current_suggestion_pools': get_current_suggestion_pools(self.current_show)}
+    
+    def session_reset(self):
+        session = self.session_store.get_session()
+        # Get a random hash to store as the session id
+        session['id'] = random.getrandbits(128)
 
 
 class RobotsTXT(webapp2.RequestHandler):

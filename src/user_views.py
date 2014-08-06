@@ -247,7 +247,7 @@ class UserAccount(ViewBase):
         except IndexError:
             leaderboard_stats = {'level': 1, 'points': 0, 'medals': [], 'wins': 0,
                                  'suggestions': 0}
-        print "user_profile, ", user_profile
+
         context = {'show_entries': show_entries,
                    'leaderboard_stats': leaderboard_stats,
                    'user_profile': user_profile,
@@ -285,7 +285,6 @@ class UserAccount(ViewBase):
                                                 self.add_context(context)))
 
 
-# Used to handle the user account
 class MedalsPage(ViewBase):
     @redirect_locked
     def get(self):

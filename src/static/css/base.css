@@ -253,3 +253,37 @@ img.medal-resize {
     cursor: hand;
     margin-top: 20px;
 }
+
+.facebook-icon-large, .google-icon-large {
+    position: relative;
+    background-position: left center;
+    background-repeat: no-repeat;
+    width: 50px;
+    height: 50px;
+    left: 10%;
+    margin-top: -2%;
+}
+
+.facebook-icon-large {
+    background-image:url('/static/img/facebook-icon-large.png');
+}
+
+.google-icon-large {
+    background-image:url('/static/img/google-icon-large.png');
+}
+
+.facebook-icon-small, .google-icon-small {
+    position: relative;
+    background-position: left center;
+    background-repeat: no-repeat;
+    width: 20px;
+    height: 20px;
+}
+
+.facebook-icon-small {
+    background-image:url('/static/img/facebook-icon-small.png');
+}
+
+.google-icon-small {
+    background-image:url('/static/img/google-icon-small.png');
+}

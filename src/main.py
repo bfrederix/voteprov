@@ -27,8 +27,10 @@ from user_views import (MainPage, LiveVote, AddSuggestions,
 						Leaderboards, UserAccount, MedalsPage)
 from admin_views import (ShowPage, CreateShow, DeleteTools,
 						 SuggestionPools, VoteTypes,
-					     JSTestPage, AddPlayers, IntervalTimer)
-from json_views import (ShowJSON, IntervalTimerJSON, UpvoteJSON)
+					     JSTestPage, AddPlayers, IntervalTimer,
+					     CreateMedals)
+from json_views import (ShowJSON, IntervalTimerJSON, UpvoteJSON,
+                        SessionLogout, FacebookLogin)
 
 
 config = {'webapp2_extras.sessions': {
@@ -57,6 +59,7 @@ app = webapp2.WSGIApplication([
     (r'/create_show/', CreateShow),
     (r'/vote_types/', VoteTypes),
     (r'/suggestion_pools/', SuggestionPools),
+    (r'/create_medals/', CreateMedals),
     (r'/add_players/', AddPlayers),
     (r'/delete_tools/', DeleteTools),
     (r'/interval_timer/', IntervalTimer),
@@ -65,6 +68,8 @@ app = webapp2.WSGIApplication([
     (r'/show_json/(\d+)/', ShowJSON),
     (r'/interval_timer_json/(\d+)/', IntervalTimerJSON),
     (r'/upvote_json/([a-zA-Z\-]+)/',UpvoteJSON),
+    (r'/session_logout/', SessionLogout),
+    (r'/fb_login/', FacebookLogin),
     # Task Queues
     (r'/live_vote_worker/', LiveVoteWorker),
 ],

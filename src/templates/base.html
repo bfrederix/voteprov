@@ -11,6 +11,20 @@
   	
   	<script src="{{js_path}}jquery-1.11.0.min.js"></script>
   	<script src="{{js_path}}bootstrap.min.js"></script>
+  	<script>
+        $( document ).ready(function() {
+            $('#Logout').click(function() {
+                FB.logout(function () { document.location.reload(); });
+                $.ajax({ 
+                    url: '/session_logout/',
+                    data: {"logout": true},
+                    type: 'post',
+                    async: false,
+                    success: function(result){}
+                });
+            });
+  	    });
+    </script>
   	
   	{% block add_head %}{% endblock %}
   	<title>{% block title %}Adventure-prov{% endblock %}</title>
@@ -18,6 +32,7 @@
   </head>
 
   <body>
+    {% include "facebook_sdk.html" %}
   	{% block nav_bar %}
 		<nav id="top-nav-bar" class="navbar navbar-inverse" role="navigation">
 			<div class="container-fluid">
@@ -69,6 +84,7 @@
     							<li {% block create-selected %}{% endblock %}><a href="/create_show/">Create Show</a></li>
     							<li {% block vote-type-selected %}{% endblock %}><a href="/vote_types/">Add/Delete Vote Types</a></li>
     							<li {% block suggestion-pool-selected %}{% endblock %}><a href="/suggestion_pools/">Add/Delete Suggestion Pools</a></li>
+    							<li {% block create-medals-selected %}{% endblock %}><a href="/create_medals/">Add/Delete Medals</a></li>
 								<li {% block add-player-selected %}{% endblock %}><a href="/add_players/">Add Players</a></li>
 								<li {% block delete-tools-selected %}{% endblock %}><a href="/delete_tools/">Delete Tools</a></li>
 								<li {% block interval-timer-selected %}{% endblock %}><a href="/interval_timer/">Interval Timer</a></li>
@@ -78,7 +94,19 @@
 					{% endif %}
 				  </ul>
 				  <ul class="nav navbar-nav navbar-right">
-					<li><a href="{{auth_url}}">{{auth_action}}</a></li>
+				    {% if auth_action == 'Login' %}
+				        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                Login <span class="caret"></span>
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#" onclick="facebook_login();"><div class="facebook-icon-small pull-left"></div>&nbsp;<strong>Login with Facebook</strong></a></li>
+                                <li><a id="{{auth_action}}" href="{{auth_url}}"><div class="google-icon-small pull-left"></div>&nbsp;<strong>Login with Google</strong></a></li>
+                            </ul>
+                        </li>
+                    {% else %}
+					    <li><a id="{{auth_action}}" href="{{auth_url}}">{{auth_action}}</a></li>
+					{% endif %}
 				  </ul>
 				  {% if username %}
 				    <p class="navbar-text navbar-right">{{username}}</p>

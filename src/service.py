@@ -297,6 +297,9 @@ def create_live_vote(create_data):
 def create_leaderboard_entry(create_data):
     return create_model_entity(LeaderboardEntry, create_data)
 
+def create_medal(create_data):
+    return create_model_entity(Medal, create_data)
+
 
 def create_user_profile(create_data):
     stripped_username = create_data.get('username', '').replace(" ", "").lower()
