@@ -14,23 +14,16 @@
                                 Username: {{user_profile.username}}
                             </div>
                         </div>
-                        <hr/>
-                        <div class="row">
-                            <div class="col-md-3">
-                                Level:
-                                {% if page_user_id == user.user_id %}
-                                    <img class="facebook-share pull-right" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Adventure-prov Level {{leaderboard_stats.level}} Medal', 'For reaching Level {{leaderboard_stats.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
-                                {% endif %}
-                                <a href="/medals/#level-medal"><div class="level-medal"><div class="level-number">{{leaderboard_stats.level}}</div></div></a>
-                            </div>
-                        </div>
-                        <hr/>
                         <div class="row">
                             <div class="col-md-12">
                                 Suggestions: {{leaderboard_stats.suggestions}}
                             </div>
                         </div>
-                        <hr/>
+                        <div class="row">
+                            <div class="col-md-12">
+                                Suggestion Wins: {{leaderboard_stats.wins}}
+                            </div>
+                        </div>
                         <div class="row">
                             <div class="col-md-12">
                                 Points: {{leaderboard_stats.points}}
@@ -38,22 +31,31 @@
                         </div>
                         <hr/>
                         <div class="row">
-                            <div class="col-md-12">
-                                Medals:<br/>
-                                {% for medal in leaderboard_stats.medals %}
-                                    <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
-                                    {% if page_user_id == user.user_id %}
-                                        <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', 'Adventure-prov {{medal.get.display_name}} Medal', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
-                                    {% endif %}
-                                {% endfor %}
+                            <div class="col-md-3">
+                                Point Level:
+                                <a href="/medals/#level-medal"><div class="level-medal"><div class="level-number">{{leaderboard_stats.level}}</div></div></a>
+                                {% if page_user_id == user.user_id %}
+                                    <img class="facebook-share" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/rank.png', 'Adventure-prov Level {{leaderboard_stats.level}} Medal', 'For reaching Level {{leaderboard_stats.level}} in Adventure-prov!', 'The current point level you have reached, based on how many votes you have received.')"/>
+                                {% endif %}
                             </div>
                         </div>
                         <hr/>
                         <div class="row">
                             <div class="col-md-12">
-                                Suggestion Wins: {{leaderboard_stats.wins}}
+                                Medals:<br/>
+                                <div class="row">
+                                    {% for medal in leaderboard_stats.medals %}
+                                    
+                                        <a href="/medals/#{{medal.get.name}}"><div class="{{medal.get.name}}-medal pull-left"></div></a>
+                                        {% if page_user_id == user.user_id %}
+                                            <img class="facebook-share pull-left" src="{{image_path}}facebook_share.png" onClick="medal_share('http://{{host_domain}}{{path_qs}}', 'http://{{host_domain}}{{image_path}}medals/{{medal.get.name}}.png', 'Adventure-prov {{medal.get.display_name}} Medal', 'For winning the {{medal.get.display_name}} medal at Adventure-prov!', '{{medal.get.description}}')"/>
+                                        {% endif %}
+                                        {% if forloop.counter|divisibleby:3 and not forloop.last %}</div><div class="row">{% endif %}
+                                    {% endfor %}
+                                </div>
                             </div>
                         </div>
+                        <hr/>
                         {% if page_user_id == user.user_id %}
                             <hr style="height:4px;border:none;color:#333;background-color:#333;"/>
                             <form class="form-horizontal" role="form" action="/user/{{page_user_id}}/" method="post">
