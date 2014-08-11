@@ -203,6 +203,7 @@ class VoteTypes(ViewBase):
                               'ordering': int(self.request.get('ordering', 10)),
                               'options': int(get_or_default(self.request.get('options'), 3)),
                               'randomize_amount': int(get_or_default(self.request.get('randomize_amount'), 6)),
+                              'button_color': self.request.get('button_color', '#003D7A'),
                               'intervals': intervals})
             action = 'created'
         vote_types = fetch_vote_types()
