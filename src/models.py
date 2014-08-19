@@ -758,3 +758,7 @@ class UserProfile(ndb.Model):
         if self.username:
             self.strip_username = self.username.replace(" ", "").lower()
         return super(UserProfile, self).put(*args, **kwargs)
+
+
+class EmailOptOut(ndb.Model):
+    email = ndb.StringProperty(required=True)

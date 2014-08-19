@@ -28,7 +28,7 @@ from user_views import (MainPage, LiveVote, AddSuggestions,
 from admin_views import (ShowPage, CreateShow, DeleteTools,
 						 SuggestionPools, VoteTypes,
 					     JSTestPage, AddPlayers, IntervalTimer,
-					     CreateMedals)
+					     CreateMedals, ExportEmails)
 from json_views import (ShowJSON, IntervalTimerJSON, UpvoteJSON,
                         SessionLogout, FacebookLogin)
 
@@ -64,6 +64,7 @@ app = webapp2.WSGIApplication([
     (r'/delete_tools/', DeleteTools),
     (r'/interval_timer/', IntervalTimer),
     (r'/js_test/', JSTestPage),
+    (r'/export_emails/', ExportEmails),
     # JSON ENDPOINT
     (r'/show_json/(\d+)/', ShowJSON),
     (r'/interval_timer_json/(\d+)/', IntervalTimerJSON),

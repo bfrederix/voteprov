@@ -1,6 +1,8 @@
 import datetime
 import json
 import random
+import csv
+import StringIO
 
 import webapp2
 from google.appengine.ext.webapp import template
@@ -8,14 +10,14 @@ from google.appengine.ext.webapp import template
 from views_base import ViewBase, get_or_default, admin_required
 
 from service import (get_suggestion, get_player, get_show,
-                     get_vote_type, get_voted_item, get_medal,
-                     fetch_suggestions, get_suggestion_pool,
+                     get_vote_type, get_voted_item, get_medal, get_user_profile,
+                     get_suggestion_pool, get_email_opt_out, fetch_suggestions,
                      fetch_players, fetch_preshow_votes, fetch_vote_options,
                      fetch_shows, fetch_live_votes, fetch_suggestion_pools,
                      fetch_vote_types, fetch_voted_items, fetch_show_intervals,
                      fetch_medals, create_medal,
                      create_show, create_show_interval, create_suggestion_pool,
-                     create_vote_type, create_player,
+                     create_vote_type, create_player, create_email_opt_out,
                      get_unused_suggestions, VOTE_STYLE, OCCURS_TYPE,
                      test_awarding)
 from timezone import get_mountain_time, back_to_tz
@@ -389,6 +391,57 @@ class IntervalTimer(ViewBase):
                    'now_tz': back_to_tz(get_mountain_time())}
         self.response.out.write(template.render(self.path('interval_timer.html'),
                                                 self.add_context(context)))
+
+
+class ExportEmails(ViewBase):
+    @admin_required
+    def get(self):
+        context = {'shows': fetch_shows()}
+        self.response.out.write(template.render(self.path('export_emails.html'),
+                                                self.add_context(context)))
+    
+    @admin_required
+    def post(self):
+        # Initialize opt out if necessary
+        if not get_email_opt_out(email='tester@example.com'):
+            create_email_opt_out({'email': 'tester@example.com'})
+        if self.request.get('show_id'):
+            # Get the suggestions for the give show
+            show = get_show(key_id=self.request.get('show_id'))
+            suggestions = fetch_suggestions(show=show.key)
+            filehandle = StringIO.StringIO()
+            writer = csv.writer(filehandle,
+                                delimiter=',',
+                                quotechar='"',
+                                quoting=csv.QUOTE_NONNUMERIC)
+            user_dict = {}
+            for suggestion in suggestions:
+                # Get the user that submitted the suggestion
+                user_profile = get_user_profile(user_id=suggestion.user_id)
+                # Make sure there is a user profile attached
+                if user_profile:
+                    email = user_profile.email
+                    # If an email is attached, and the user has not opted out of emails
+                    if email and not get_email_opt_out(email=email):
+                        user_dict.setdefault(email, [])
+                        user_dict[email].append(suggestion.value)
+            # Write the csv rows
+            for user_email, suggestion_list in user_dict.items():
+                row = [user_email]
+                # Add all the suggestions to the user's csv entry
+                for suggestion in suggestion_list:
+                    row.append(suggestion)
+                print row
+                writer.writerow(row)
+            # Write as csv
+            self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
+            self.response.headers['Content-disposition'] = 'attachment;filename=emails_export.csv'
+            filehandle.seek(0)
+            self.response.out.write(filehandle.read())
+        else:
+            context = {'shows': fetch_shows()}
+            self.response.out.write(template.render(self.path('export_emails.html'),
+                                                    self.add_context(context)))
 
 
 class MockObject(object):

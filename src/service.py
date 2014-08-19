@@ -5,6 +5,7 @@ from google.appengine.ext import ndb
 from models import (Show, Player, VoteType, Suggestion, PreshowVote,
                     ShowInterval, VoteOptions, LiveVote, SuggestionPool,
                     VotedItem, LeaderboardEntry, Medal, UserProfile,
+                    EmailOptOut,
                     get_current_show, VOTE_STYLE, OCCURS_TYPE, LEVEL_POINT)
 from timezone import (get_today_start, get_tomorrow_start)
 
@@ -43,6 +44,10 @@ def get_leaderboard_entry(**kwargs):
 
 def get_user_profile(**kwargs):
     return get_model_entity(UserProfile, **kwargs)
+
+
+def get_email_opt_out(**kwargs):
+    return get_model_entity(EmailOptOut, **kwargs)
 
 
 def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False,
@@ -299,6 +304,10 @@ def create_leaderboard_entry(create_data):
 
 def create_medal(create_data):
     return create_model_entity(Medal, create_data)
+
+
+def create_email_opt_out(create_data):
+    return create_model_entity(EmailOptOut, create_data)
 
 
 def create_user_profile(create_data):
