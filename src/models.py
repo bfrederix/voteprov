@@ -137,8 +137,20 @@ class VoteType(ndb.Model):
                                     VoteOptions.interval == interval).get()
         # If the interval options haven't been generated
         if not interval_vote_options:                    
-            # Return un-used suggestion keys, sorted by vote
+            # Return un-used suggestion keys, sorted by vote, and only if they've appeared less than twice
             unused_suggestion_keys = Suggestion.query(
+                                         Suggestion.suggestion_pool == self.suggestion_pool,
+                                         Suggestion.used == False,
+                                         Suggestion.amount_voted_on < 2,
+                                             ).order(-Suggestion.preshow_value,
+                                                     Suggestion.created
+                                                        ).fetch(self.randomize_amount,
+                                                                keys_only=True)
+            # If there are less than the option amount left that haven't been voted on twice
+            # Allow suggestions that have been voted on twice already
+            if len(unused_suggestion_keys) < self.options:
+                # Fetch un-used suggestion keys
+                unused_suggestion_keys = Suggestion.query(
                                          Suggestion.suggestion_pool == self.suggestion_pool,
                                          Suggestion.used == False,
                                              ).order(-Suggestion.preshow_value,
@@ -155,6 +167,7 @@ class VoteType(ndb.Model):
             # Mark the suggestions as voted on
             for unused_suggestion in unused_suggestions:
                 unused_suggestion.voted_on = True
+                unused_suggestion.amount_voted_on += 1
                 unused_suggestion.put()
             # Create the corresponding vote options for that interval (or none interval)
             VoteOptions(vote_type=self.key,
@@ -607,6 +620,7 @@ class Suggestion(ndb.Model):
     suggestion_pool = ndb.KeyProperty(kind=SuggestionPool, required=True)
     used = ndb.BooleanProperty(default=False)
     voted_on = ndb.BooleanProperty(default=False)
+    amount_voted_on = ndb.IntegerProperty(default=0)
     value = ndb.StringProperty(required=True)
     # Pre-show upvotes
     preshow_value = ndb.IntegerProperty(default=0)

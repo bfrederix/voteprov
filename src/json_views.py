@@ -20,7 +20,7 @@ class IntervalTimerJSON(ViewBase):
     def get(self, show_id):
         time_json = {}
         show = get_show(key_id=show_id)
-        # Look through all the vote types for the show 
+        # Look through all the vote types for the show
         for vote_type_key in getattr(show, 'vote_types', []):
             vote_type = vote_type_key.get()
             # If the vote type has intervals
