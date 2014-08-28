@@ -21,7 +21,7 @@ class IntervalTimerJSON(ViewBase):
         time_json = {}
         show = get_show(key_id=show_id)
         # Look through all the vote types for the show
-        for vote_type_key in show.vote_types:
+        for vote_type_key in getattr(show, 'vote_types', []):
             vote_type = vote_type_key.get()
             # If the vote type has intervals
             if vote_type.has_intervals:
@@ -42,23 +42,23 @@ class IntervalTimerJSON(ViewBase):
 
 class UpvoteJSON(ViewBase):
     def get(self, suggestion_pool_name):
-    	response_dict = {}
-    	current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
-    	response_dict['item_count'] = len(get_suggestion_pool_page_suggestions(
+        response_dict = {}
+        current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
+        response_dict['item_count'] = len(get_suggestion_pool_page_suggestions(
                                               getattr(current_suggestion_pool, 'key', None)))
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps(response_dict))
     
     def post(self, suggestion_pool_name):
-    	# Get the posted data
+        # Get the posted data
     	posted_id = self.request.get('id', '')
-    	session_id = self.request.get('session_id')
-    	# Splits the id into type and item id
+        session_id = self.request.get('session_id')
+        # Splits the id into type and item id
     	item_type, item_id = posted_id.split('-')
-    	suggestion = get_suggestion(key_id=item_id)
+        suggestion = get_suggestion(key_id=item_id)
         # See if the user already voted for this suggestion
         if not session_id in suggestion.get_voted_sessions:
-        	# If not, create the pre-show vote
+            # If not, create the pre-show vote
             create_preshow_vote({'show': getattr(self.current_show, 'key', None),
                                  'suggestion': suggestion.key,
                                  'session_id': session_id})

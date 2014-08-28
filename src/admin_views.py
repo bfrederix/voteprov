@@ -4,7 +4,6 @@ import random
 import csv
 import StringIO
 
-import webapp2
 from google.appengine.ext.webapp import template
 
 from views_base import ViewBase, get_or_default, admin_required
@@ -15,7 +14,7 @@ from service import (get_suggestion, get_player, get_show,
                      fetch_players, fetch_preshow_votes, fetch_vote_options,
                      fetch_shows, fetch_live_votes, fetch_suggestion_pools,
                      fetch_vote_types, fetch_voted_items, fetch_show_intervals,
-                     fetch_medals, create_medal,
+                     fetch_leaderboard_entries, fetch_medals, create_medal,
                      create_show, create_show_interval, create_suggestion_pool,
                      create_vote_type, create_player, create_email_opt_out,
                      get_unused_suggestions, VOTE_STYLE, OCCURS_TYPE,
@@ -337,6 +336,10 @@ class DeleteTools(ViewBase):
                 show_intervals = fetch_show_intervals(show=show_key)
                 for show_interval in show_intervals:
                     show_interval.key.delete()
+                # Delete the leaderboard entries for the show
+                leaderboard_entries = fetch_leaderboard_entries(show=show_key)
+                for leaderboard_entry in leaderboard_entries:
+                    leaderboard_entry.key.delete()
                 show_key.delete()
                 deleted = 'Show(s)'
         # Delete ALL un-used things
@@ -419,7 +422,7 @@ class ExportEmails(ViewBase):
                 # Get the user that submitted the suggestion
                 user_profile = get_user_profile(user_id=suggestion.user_id)
                 # Make sure there is a user profile attached
-                if user_profile:
+                if user_profile and suggestion.user_id:
                     email = user_profile.email
                     # If an email is attached, and the user has not opted out of emails
                     if email and not get_email_opt_out(email=email):

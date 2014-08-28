@@ -1,4 +1,3 @@
-import datetime
 import webapp2
 
 from google.appengine.ext.webapp import template
@@ -55,21 +54,28 @@ class LiveVoteWorker(webapp2.RequestHandler):
         state = None
         # Get the current show
         show = get_current_show()
-        vote_type = show.current_vote_type.get()
+        # Make sure there is a current vote type
+        if show.current_vote_type:
+            vote_type = show.current_vote_type.get()
+        else:
+            vote_type = None
+            state = None
         vote_num = int(self.request.get('vote_num'))
         session_id = self.request.get('session_id')
         user_id = self.request.get('user_id')
         # Catch string "None"
         if user_id == "None":
             user_id = None
-        vote_data = show.current_vote_options(voting_only=True)
-        # If we're in the voting period
-        if vote_data.get('display') == 'voting':
-            state = vote_data['state']
-            try:
-                voted_option = vote_data['options'][vote_num]
-            except IndexError:
-                state = None
+        # Only try to determine state if there is a current vote type
+        if vote_type:
+            vote_data = show.current_vote_options(voting_only=True)
+            # If we're in the voting period
+            if vote_data.get('display') == 'voting':
+                state = vote_data['state']
+                try:
+                    voted_option = vote_data['options'][vote_num]
+                except IndexError:
+                    state = None
         # If there is a voting state of some kind
         if state and state != 'default':
             # Cast the interval to an int if it exists
