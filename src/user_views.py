@@ -15,6 +15,11 @@ from service import (get_suggestion_pool, get_suggestion, get_player,
                      award_leaderboard_medals, update_user_profile)
 
 
+# HARDCODED SUGGESTION LIMIT
+SHOW_SUGGESTION_LIMIT = 70
+USER_SUGGESTION_LIMIT = 3
+
+
 class MainPage(ViewBase):
     @redirect_locked
     def get(self):
@@ -144,9 +149,23 @@ class LiveVoteWorker(webapp2.RequestHandler):
                                                   'points': points})
 
 
+def user_suggestion_amount(user_id, session_id, suggestions):
+    amount = 0
+    for suggestion in suggestions:
+        # If the user id matches the suggestion's user id
+        if suggestion.user_id and suggestion.user_id == user_id:
+            amount += 1
+        # If the session id matches the suggestion's session id
+        elif session_id and suggestion.session_id == session_id:
+            amount += 1
+    return amount
+
+
 class AddSuggestions(ViewBase):
     @redirect_locked
     def get(self, suggestion_pool_name=None):
+        session_id = str(self.session.get('id', '0'))
+        threshold_met = False
         if suggestion_pool_name:
             current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
         else:
@@ -157,25 +176,36 @@ class AddSuggestions(ViewBase):
         # Get all the suggestions from the current pool
         suggestions = get_suggestion_pool_page_suggestions(
                         getattr(current_suggestion_pool, 'key', None))
+        # We've reached the limit of suggestions for this suggestion type
+        if len(suggestions) >= SHOW_SUGGESTION_LIMIT or \
+            user_suggestion_amount(self.user_id, session_id, suggestions) >= USER_SUGGESTION_LIMIT:
+            threshold_met = True
         context = {'current_suggestion_pool': current_suggestion_pool,
                    'suggestions': suggestions,
-                   'session_id': str(self.session.get('id', '0')),
+                   'threshold_met': threshold_met,
+                   'session_id': session_id,
                    'item_count': len(suggestions)}
         self.response.out.write(template.render(self.path('add_suggestions.html'),
                                                 self.add_context(context)))
 
     @redirect_locked
     def post(self, suggestion_pool_name):
+        session_id = str(self.session.get('id', '0'))
+        threshold_met = False
         current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
         context = pre_show_voting_post(getattr(self.current_show, 'key', None),
                                        current_suggestion_pool,
                                        self.request,
-                                       str(self.session.get('id', '0')),
+                                       session_id,
                                        self.user_id,
                                        self.context.get('is_admin', False))
-
+        # We've reached the limit of suggestions for this suggestion type
+        if len(context['suggestions']) >= SHOW_SUGGESTION_LIMIT or \
+            user_suggestion_amount(self.user_id, session_id, context['suggestions']) >= USER_SUGGESTION_LIMIT:
+            threshold_met = True
         context.update({'current_suggestion_pool': current_suggestion_pool,
-                        'item_count': len(context['suggestions'])})
+                        'item_count': len(context['suggestions']),
+                        'threshold_met': threshold_met})
         self.response.out.write(template.render(self.path('add_suggestions.html'),
                                                 self.add_context(context)))
 

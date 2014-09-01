@@ -42,23 +42,22 @@
                             {% if current_show and current_show.theme %}
                                 <div class="bg-info large-font">Tonight's Theme: {{show.theme.get.name}}</div>
                             {% endif %}
+                            {% if threshold_met %}
+                                <div class="bg-info large-font">Maximum {{current_suggestion_pool.display_name}} suggestions entered. Please Upvote your favorites, or try another suggestion type.</div>
+                            {% endif %}
                             <div class="well well-sm medium-font">
                                 {{current_suggestion_pool.description|safe}}
-                                {% comment %}
-                                Actions should be gender neutral, smart, and from the heart!
-                                <br/>Example Action: <span style="font-weight:bold;">Steals the Declaration of Independence</span>
-                                {% endcomment%}
                             </div>
                         </div>
                         <div class="panel-body">
                             <form action="/suggestions/{{current_suggestion_pool.name}}/" method="post">
                                 <div class="row">
                                     <div class="col-md-12">
-                                        <input type="text" class="form-control" name="entry_value">
+                                        <input type="text" class="form-control" name="entry_value" {% if threshold_met %}disabled{% endif %}>
                                     </div>
                                 </div>
                                 <div class="row text-center">
-                                    <button type="submit" class="btn btn-danger">Add {{current_suggestion_pool.display_name}}</button>
+                                    <button type="submit" class="btn btn-danger" {% if threshold_met %}disabled{% endif %}>Add {{current_suggestion_pool.display_name}}</button>
                                 </div>
                             </form>
                         </div>
