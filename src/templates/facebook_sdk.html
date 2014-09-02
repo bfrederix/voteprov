@@ -41,16 +41,25 @@
             // If the user logged in successfully
             // and allowed their information to be passed
             if (response.id) {
-                $.ajax({ 
-                    url: '/fb_login/',
-                    data: {"user_id": response.id,
-                           "email": response.email},
-                    type: 'post',
-                    async: false,
-                    success: function(result){
-                        document.location.reload();
+                FB.getLoginStatus(function(status_response) {
+                    if (status_response.status === 'connected') {
+                        $.ajax({
+                            url: '/fb_login/',
+                            data: {"user_id": response.id,
+                                   "email": response.email,
+                                   "token": status_response.authResponse.accessToken},
+                            type: 'post',
+                            async: false,
+                            success: function(result){
+                                document.location.reload();
+                            }
+                        });
                     }
-                });
+                    else {
+                        alert("Facebook not connected!");
+                    }
+                }
+
             }
             else {
                 alert("Facebook login attempt failed!");

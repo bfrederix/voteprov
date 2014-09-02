@@ -17,7 +17,7 @@ from service import (get_suggestion_pool, get_suggestion, get_player,
 
 # HARDCODED SUGGESTION LIMIT
 SHOW_SUGGESTION_LIMIT = 70
-USER_SUGGESTION_LIMIT = 3
+USER_SUGGESTION_LIMIT = 5
 
 
 class MainPage(ViewBase):

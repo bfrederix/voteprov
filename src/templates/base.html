@@ -23,6 +23,25 @@
                     success: function(result){}
                 });
             });
+            var username = "{{username}}";
+            if (username == "" || username == "None" ) {
+                FB.getLoginStatus(function(status_response) {
+                    if (status_response.status === 'connected') {
+                        $.ajax({
+                            url: '/fb_login/',
+                            data: {"user_id": status_response.authResponse.userID,
+                                   "token": status_response.authResponse.accessToken},
+                            type: 'post',
+                            async: false,
+                            success: function(result){
+                                document.location.reload();
+                            }
+                        });
+                    }
+                    else {
+
+                    }
+            }
   	    });
     </script>
   	

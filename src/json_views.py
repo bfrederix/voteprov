@@ -79,6 +79,7 @@ class FacebookLogin(ViewBase):
     def post(self):
         """Used to handle Facebook login"""
         self.facebook_login(self.request.get('user_id'),
-                            self.request.get('email'))
+                            self.request.get('email'),
+                            self.request.get('token'))
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps(True))
