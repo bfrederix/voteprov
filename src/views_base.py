@@ -52,6 +52,7 @@ class ViewBase(webapp2.RequestHandler):
         if self.user:
             auth_url = users.create_logout_url(self.request.uri)
             auth_action = 'Logout'
+            return auth_url, auth_action
         # If they aren't logged in
         else:
             # Attempt to update the user profile's session with google auth
@@ -60,6 +61,7 @@ class ViewBase(webapp2.RequestHandler):
             if self.user:
                 auth_url = users.create_logout_url(self.request.uri)
                 auth_action = 'Logout'
+                return auth_url, auth_action
             # If the user still isn't logged in
             else:
                 # Check to see if the session has FB token
@@ -68,28 +70,29 @@ class ViewBase(webapp2.RequestHandler):
                     graph = facebook.GraphAPI(self.session.get('fb_token'))
                     # Make sure the user is still authenticated
                     if graph:
-                        user = graph.get_object("me")
+                        try:
+                            user = graph.get_object("me")
+                        except facebook.GraphAPIError:
+                            user = None
                         if user and user.get("id"):
                             user_id = user.get("id")
-                            print "Special FB login edge case user: %s" % user_id
                             # Get the profile
                             user_profile = get_user_profile(user_id=user_id)
-                            # Update the current session
-                            user_profile.current_session = str(self.session.get('id'))
-                            user_profile.put()
-                            # Make sure the user is set
-                            self.user = user_profile
-                            auth_url = users.create_logout_url(self.request.uri)
-                            auth_action = 'Logout'
-                        else:
-                            auth_url = users.create_login_url(self.request.uri)
-                            auth_action = 'Login'
-                    else:
-                        auth_url = users.create_login_url(self.request.uri)
-                        auth_action = 'Login'
-                else:
-                    auth_url = users.create_login_url(self.request.uri)
-                    auth_action = 'Login'
+                            # If not found by id, user email
+                            if not user_profile:
+                                user_profile = get_user_profile(email=user.get("email"))
+                            # If the user profile is found
+                            if user_profile:
+                                # Update the current session
+                                user_profile.current_session = str(self.session.get('id'))
+                                user_profile.put()
+                                # Make sure the user is set
+                                self.user = user_profile
+                                auth_url = users.create_logout_url(self.request.uri)
+                                auth_action = 'Logout'
+                                return auth_url, auth_action
+        auth_url = users.create_login_url(self.request.uri)
+        auth_action = 'Login'
         return auth_url, auth_action
     
     def google_login(self):
@@ -134,7 +137,8 @@ class ViewBase(webapp2.RequestHandler):
             return None
         # Get an extended Facebook token
         graph = facebook.GraphAPI(token)
-        extended_token = graph.extend_access_token(FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)
+        extend_response = graph.extend_access_token(FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)
+        extended_token = extend_response.get('access_token')
         self.session['fb_token'] = extended_token
         # Try to get the user profile by user id
         user_profile = get_user_profile(user_id=str(user_id))
@@ -142,6 +146,7 @@ class ViewBase(webapp2.RequestHandler):
         if user_profile:
             user_profile.current_session = str(self.session.get('id'))
             user_profile.fb_access_token = extended_token
+            user_profile.login_type = 'facebook'
             user_profile.put()
             return user_profile
         # If we at least have an e-mail
@@ -152,6 +157,7 @@ class ViewBase(webapp2.RequestHandler):
                 # If the profile was found by email, set the current session
                 user_profile.current_session = str(self.session.get('id'))
                 user_profile.fb_access_token = extended_token
+                user_profile.login_type = 'facebook'
                 user_profile.put()
                 return user_profile
             else:
@@ -239,6 +245,8 @@ class ViewBase(webapp2.RequestHandler):
         session = self.session_store.get_session()
         # Get a random hash to store as the session id
         session['id'] = random.getrandbits(128)
+        # Empty the Facebook token
+        session['fb_token'] = None
 
 
 class RobotsTXT(webapp2.RequestHandler):
