@@ -134,8 +134,22 @@ class LiveVoteWorker(webapp2.RequestHandler):
                         points = 2
                     else:
                         points = 1
-                    leaderboard_entry = get_leaderboard_entry(show=show.key,
-                                                              user_id=suggestion_user_id)
+                    # Get all leaderboard entries for this user for this show
+                    leaderboard_entries = fetch_leaderboard_entries(show=show.key,
+                                                                    user_id=suggestion_user_id)
+                    # IF there are duplicates
+                    if len(leaderboard_entries) > 1:
+                        # Delete the additional entry
+                        leaderboard_entries[1].key.delete()
+                        # Take the first of the leaderboard entry items
+                        leaderboard_entry = leaderboard_entries[0]
+                    # If there is just one
+                    elif len(leaderboard_entries) == 1:
+                        # Take the first of the leaderboard entry items
+                        leaderboard_entry = leaderboard_entries[0]
+                    # If there isn't an entry yet
+                    else:
+                        leaderboard_entry = None
                     # If a leaderboard entry exists for the suggestion user and show
                     if leaderboard_entry:
                         # Add the points to the suggestion user's leaderboard entry
