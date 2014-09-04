@@ -31,6 +31,25 @@ indexes:
   properties:
   - name: suggestion_pool
   - name: used
+  - name: amount_voted_on
+  - name: preshow_value
+    direction: desc
+  - name: created
+
+- kind: Suggestion
+  properties:
+  - name: suggestion_pool
+  - name: used
+  - name: amount_voted_on
+    direction: desc
+  - name: preshow_value
+    direction: desc
+  - name: created
+
+- kind: Suggestion
+  properties:
+  - name: suggestion_pool
+  - name: used
   - name: preshow_value
     direction: desc
   - name: created

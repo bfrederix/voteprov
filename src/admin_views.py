@@ -304,9 +304,7 @@ class DeleteTools(ViewBase):
                 preshow_votes = fetch_preshow_votes(suggestion=suggestion_entity.key)
                 for pv in preshow_votes:
                     pv.key.delete()
-                # Archive the suggestion
-                suggestion_entity.archived = True
-                suggestion_entity.put()
+                suggestion_entity.key.delete()
             deleted = 'Suggestion(s)'
         # If show(s) were deleted
         if show_list:

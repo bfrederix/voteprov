@@ -142,7 +142,8 @@ class VoteType(ndb.Model):
                                          Suggestion.suggestion_pool == self.suggestion_pool,
                                          Suggestion.used == False,
                                          Suggestion.amount_voted_on < 2,
-                                             ).order(-Suggestion.preshow_value,
+                                             ).order(Suggestion.amount_voted_on,
+                                                     -Suggestion.preshow_value,
                                                      Suggestion.created
                                                         ).fetch(self.randomize_amount,
                                                                 keys_only=True)
