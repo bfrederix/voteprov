@@ -83,6 +83,19 @@ class ShowPage(ViewBase):
                                                 self.add_context(context)))        
 
 
+def get_rand_player_list(players, star_players=[]):
+    """Create a random list of players,
+       putting star players at the front of the list for popping
+    """
+    # Make a copy of the list of players and randomize it
+    rand_players = list(players)
+    random.shuffle(rand_players, random.random)
+    if star_players:
+        for star in star_players:
+            rand_players.append(star)
+    return rand_players
+
+
 class CreateShow(ViewBase):
     @admin_required
     def get(self):
@@ -99,12 +112,18 @@ class CreateShow(ViewBase):
                    'players': fetch_players()}
         if player_list and vote_type_list:
             players = []
+            star_players = []
             # Get the players for the show
             for player in player_list:
                 player_key = get_player(key_id=player, key_only=True)
-                players.append(player_key)
-            show = create_show({'players': players,
-                                'player_pool': players}).get()
+                # If they're a star player, add them to the star list
+                if player_key.get().star:
+                    star_players.append(player_key)
+                else:
+                    players.append(player_key)
+            combined_players = players + star_players
+            show = create_show({'players': combined_players,
+                                'player_pool': combined_players}).get()
             # Get and sort the vote types by ordering
             vts = [get_vote_type(key_id=x) for x in vote_type_list]
             vote_types = sorted(vts, key=lambda x: x.ordering)
@@ -123,14 +142,12 @@ class CreateShow(ViewBase):
                     # If this suggestion vote has players attached
                     if vote_type.interval_uses_players:
                         # Make a copy of the list of players and randomize it
-                        rand_players = list(players)
-                        random.shuffle(rand_players, random.random)
+                        rand_players = get_rand_player_list(players, star_players=star_players)
                         # Add the intervals to the show
                         for interval in vote_type.intervals:
                             # If random players list gets empty, refill it with more players
                             if len(rand_players) == 0:
-                                rand_players = list(players)
-                                random.shuffle(rand_players, random.random)
+                                rand_players = get_rand_player_list(players, star_players=star_players)
                             # Pop a random player off the list and create a ShowInterval
                             create_show_interval({'show': show.key,
                                                   'player': rand_players.pop(),
@@ -375,10 +392,12 @@ class AddPlayers(ViewBase):
         created = False
         player_name = self.request.get('player_name')
         photo_filename = self.request.get('photo_filename')
+        star = bool(self.request.get('star', False))
         if player_name and photo_filename:
             create_player({'name': player_name,
-                              'photo_filename': photo_filename,
-                              'date_added': get_mountain_time()})
+                           'photo_filename': photo_filename,
+                           'star': star,
+                           'date_added': get_mountain_time()})
             created = True
         context = {'created': created}
         self.response.out.write(template.render(self.path('add_players.html'),
@@ -432,7 +451,6 @@ class ExportEmails(ViewBase):
                 # Add all the suggestions to the user's csv entry
                 for suggestion in suggestion_list:
                     row.append(suggestion)
-                print row
                 writer.writerow(row)
             # Write as csv
             self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'

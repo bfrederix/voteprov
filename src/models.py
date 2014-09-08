@@ -23,6 +23,7 @@ def get_current_show():
 class Player(ndb.Model):
     name = ndb.StringProperty(required=True)
     photo_filename = ndb.StringProperty(required=True, indexed=False)
+    star = ndb.BooleanProperty(default=False)
     date_added = ndb.DateTimeProperty()
     
     @property
