@@ -1,3 +1,5 @@
+import datetime
+
 import webapp2
 
 from google.appengine.ext.webapp import template
@@ -8,9 +10,10 @@ from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
                      get_show, get_user_profile, get_leaderboard_entry,
                      fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
-                     fetch_medals, get_current_show, get_live_vote_exists,
+                     fetch_medals, fetch_leaderboard_spans,
+                     get_current_show, get_live_vote_exists,
                      create_live_vote, create_leaderboard_entry,
-                     pre_show_voting_post,
+                     create_leaderboard_span, pre_show_voting_post,
                      get_suggestion_pool_page_suggestions,
                      award_leaderboard_medals, update_user_profile)
 
@@ -31,7 +34,7 @@ class MainPage(ViewBase):
 class LiveVote(ViewBase):
     def get(self):
         show = get_current_show()
-        context = {'vote_options': show.show_option_list}
+        context = {'vote_options': getattr(show, 'show_option_list', None)}
         self.response.out.write(template.render(self.path('live_vote.html'),
                                                 self.add_context(context)))
 
@@ -60,7 +63,7 @@ class LiveVoteWorker(webapp2.RequestHandler):
         # Get the current show
         show = get_current_show()
         # Make sure there is a current vote type
-        if show.current_vote_type:
+        if show and show.current_vote_type:
             vote_type = show.current_vote_type.get()
         else:
             vote_type = None
@@ -72,7 +75,7 @@ class LiveVoteWorker(webapp2.RequestHandler):
         if user_id == "None":
             user_id = None
         # Only try to determine state if there is a current vote type
-        if vote_type:
+        if vote_type and show:
             vote_data = show.current_vote_options(voting_only=True)
             # If we're in the voting period
             if vote_data.get('display') == 'voting':
@@ -189,6 +192,7 @@ class AddSuggestions(ViewBase):
                 current_suggestion_pool = None
         # Get all the suggestions from the current pool
         suggestions = get_suggestion_pool_page_suggestions(
+                        getattr(self.current_show, 'key', None),
                         getattr(current_suggestion_pool, 'key', None))
         # We've reached the limit of suggestions for this suggestion type
         if len(suggestions) >= SHOW_SUGGESTION_LIMIT or \
@@ -226,12 +230,19 @@ class AddSuggestions(ViewBase):
 
 class Leaderboards(ViewBase):
     @redirect_locked
-    def get(self, year=None, month=None):
-        leaderboard_kwargs = {'year': year,
-                              'month': month,
+    def get(self, start_date=None, end_date=None):
+        leaderboard_kwargs = {'start_date': start_date,
+                              'end_date': end_date,
                               'unique_by_user': True}
         leaderboard_entries = fetch_leaderboard_entries(**leaderboard_kwargs)
-        context = {'shows': fetch_shows(),
+        leaderboard_spans = fetch_leaderboard_spans()
+        # Create an initial leaderboard span if one doesn't exist yet
+        if not leaderboard_spans:
+            create_leaderboard_span({'name': "Test",
+                                     'start_date': datetime.date.today(),
+                                     'end_date': datetime.date.today()})
+        context = {'shows': fetch_shows(**{'order_by_created': True}),
+                   'leaderboard_spans': leaderboard_spans,
                    'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
                                                 self.add_context(context)))
@@ -285,7 +296,12 @@ class UserAccount(ViewBase):
     def get(self, user_id):
         user_profiles = fetch_user_profiles(user_id=user_id)
         # Set the user profile as the first user profile found
-        user_profile = user_profiles[0]
+        try:
+            user_profile = user_profiles[0]
+        except IndexError:
+            self.response.write('Oops! This user does not exist!')
+            self.response.set_status(404)
+            return
         # IF a duplicate user profile was created, delete it!!
         if len(user_profiles) > 1:
             user_profiles[1].key.delete()
@@ -308,6 +324,7 @@ class UserAccount(ViewBase):
     @redirect_locked
     def post(self, user_id):
         update = 'unchanged'
+        user_profile = None
         change_username = self.request.get('change_username')
         if change_username:
             # Update the user profile with the new username

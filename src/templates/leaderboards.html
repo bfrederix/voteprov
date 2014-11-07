@@ -28,6 +28,10 @@ $( document ).ready(function() {
                 <label for="show">Show Leaderboards</label>
 	            <select id="show" class="form-control">
 	                <option value="">Select Show</option>
+                    {% for leaderboard_span in leaderboard_spans %}
+                        <option value="/leaderboards/{{leaderboard_span.start_date|date:"mdY"}}/{{leaderboard_span.end_date|date:"mdY"}}/"
+                            >{{leaderboard_span.name}}</option>
+                    {% endfor %}
 	                {% for show in shows %}
                         <option value="/leaderboards/show/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y @ P"}}</option>
                     {% endfor %}
@@ -46,17 +50,6 @@ $( document ).ready(function() {
 				    <input type="submit" class="btn btn-warning btn-block btn-lg x-large-font" value="&nbsp;Award Medals&nbsp;">
                 </div>
             {% endif %}
-            {% comment %}
-            <div class="form-group">
-                <label for="year">Year</label>
-                    <select id="year" class="form-control">
-                        <option>Select Year</option>
-                        {% for show in shows %}
-                            <option value="/leaderboards/year/month/"></option>
-                        {% endfor %}
-                    </select>
-            </div>
-            {% endcomment %}
         </form>
         <div class="table-responsive">
             <table class="table table-condensed">

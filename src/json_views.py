@@ -45,6 +45,7 @@ class UpvoteJSON(ViewBase):
         response_dict = {}
         current_suggestion_pool = get_suggestion_pool(name=suggestion_pool_name)
         response_dict['item_count'] = len(get_suggestion_pool_page_suggestions(
+                                              getattr(self.current_show, 'key', None),
                                               getattr(current_suggestion_pool, 'key', None)))
         self.response.headers['Content-Type'] = 'application/json; charset=utf-8'
         self.response.out.write(json.dumps(response_dict))
@@ -57,7 +58,7 @@ class UpvoteJSON(ViewBase):
     	item_type, item_id = posted_id.split('-')
         suggestion = get_suggestion(key_id=item_id)
         # See if the user already voted for this suggestion
-        if not session_id in suggestion.get_voted_sessions:
+        if suggestion and not session_id in suggestion.get_voted_sessions:
             # If not, create the pre-show vote
             create_preshow_vote({'show': getattr(self.current_show, 'key', None),
                                  'suggestion': suggestion.key,

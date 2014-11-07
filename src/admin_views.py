@@ -302,7 +302,7 @@ class DeleteTools(ViewBase):
     @admin_required
     def get(self):
         context = {'shows': fetch_shows(),
-                   'suggestion_pools': get_unused_suggestions()}
+                   'suggestion_pools': get_unused_suggestions(getattr(self.current_show, 'key', None))}
         self.response.out.write(template.render(self.path('delete_tools.html'),
                                                 self.add_context(context)))
 
@@ -376,7 +376,7 @@ class DeleteTools(ViewBase):
         context = {'deleted': deleted,
                    'unused_deleted': unused_deleted,
                    'shows': fetch_shows(),
-                   'suggestion_pools': get_unused_suggestions()}
+                   'suggestion_pools': get_unused_suggestions(getattr(self.current_show, 'key', None))}
         self.response.out.write(template.render(self.path('delete_tools.html'),
                                                 self.add_context(context)))
 

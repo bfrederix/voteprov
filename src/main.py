@@ -46,8 +46,7 @@ app = webapp2.WSGIApplication([
 	# User pages
     (r'/', MainPage),
     (r'/leaderboards/show/(\d+)/', ShowLeaderboard),
-    (r'/leaderboards/(\d{4})/([1-12]*)/', Leaderboards),
-    (r'/leaderboards/(\d{4})/', Leaderboards),
+    (r'/leaderboards/(\d{8})/(\d{8})/', Leaderboards),
     (r'/leaderboards/', Leaderboards),
     (r'/live_vote/', LiveVote),
     (r'/suggestions/([a-zA-Z\-]+)/', AddSuggestions),

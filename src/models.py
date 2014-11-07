@@ -40,7 +40,8 @@ class SuggestionPool(ndb.Model):
     
     @property
     def available_suggestions(self):
-        return Suggestion.query(Suggestion.suggestion_pool == self.key,
+        return Suggestion.query(Suggestion.show == get_current_show(),
+                                Suggestion.suggestion_pool == self.key,
                                 Suggestion.used == False).count()
     
     @property
@@ -140,6 +141,7 @@ class VoteType(ndb.Model):
         if not interval_vote_options:                    
             # Return un-used suggestion keys, sorted by vote, and only if they've appeared less than twice
             unused_suggestion_keys = Suggestion.query(
+                                         Suggestion.show == show,
                                          Suggestion.suggestion_pool == self.suggestion_pool,
                                          Suggestion.used == False,
                                          Suggestion.amount_voted_on < 2,
@@ -153,6 +155,7 @@ class VoteType(ndb.Model):
             if len(unused_suggestion_keys) < self.options:
                 # Fetch un-used suggestion keys
                 unused_suggestion_keys = Suggestion.query(
+                                         Suggestion.show == show,
                                          Suggestion.suggestion_pool == self.suggestion_pool,
                                          Suggestion.used == False,
                                              ).order(-Suggestion.preshow_value,
@@ -780,3 +783,9 @@ class UserProfile(ndb.Model):
 
 class EmailOptOut(ndb.Model):
     email = ndb.StringProperty(required=True)
+
+
+class LeaderboardSpan(ndb.Model):
+    name = ndb.StringProperty(required=True)
+    start_date = ndb.DateProperty()
+    end_date = ndb.DateProperty()

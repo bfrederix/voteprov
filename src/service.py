@@ -5,7 +5,7 @@ from google.appengine.ext import ndb
 from models import (Show, Player, VoteType, Suggestion, PreshowVote,
                     ShowInterval, VoteOptions, LiveVote, SuggestionPool,
                     VotedItem, LeaderboardEntry, Medal, UserProfile,
-                    EmailOptOut,
+                    EmailOptOut, LeaderboardSpan,
                     get_current_show, VOTE_STYLE, OCCURS_TYPE, LEVEL_POINT)
 from timezone import (get_today_start, get_tomorrow_start)
 
@@ -144,29 +144,62 @@ def fetch_show_intervals(**kwargs):
     return fetch_model_entities(ShowInterval, **kwargs)
 
 
+def add_to_user_dict(user_dict, entry):
+    """
+    Add an entry to the leaderboard user dictionary
+
+    :param user_dict: Dictionary for storing unique user leaderboard points
+    :param entry: LeaderboardEntry
+    :return: user_dict
+    """
+    # Set defaults for wins and points if nothing exists
+    user_dict.setdefault(entry.user_id, {})
+    user_dict[entry.user_id].setdefault('username', entry.username)
+    user_dict[entry.user_id].setdefault('points', 0)
+    user_dict[entry.user_id].setdefault('wins', 0)
+    user_dict[entry.user_id].setdefault('medals', [])
+    user_dict[entry.user_id].setdefault('suggestions', 0)
+
+    # Add the wins, points, medals, and suggestions for the user from this particular show
+    user_dict[entry.user_id]['points'] += entry.points
+    user_dict[entry.user_id]['wins'] += entry.wins
+    user_dict[entry.user_id]['medals'] += entry.medals
+    user_dict[entry.user_id]['suggestions'] += entry.suggestions
+
+    # Calculate the level they are at
+    user_dict[entry.user_id]['level'] = (user_dict[entry.user_id]['points'] / LEVEL_POINT) + 1
+
+    return user_dict
+
+
 def fetch_leaderboard_entries(**kwargs):
+    start_date = None
+    end_date = None
     if not kwargs.get('test'):
         entries = fetch_model_entities(LeaderboardEntry, **kwargs)
     else:
         entries = test_leaderboard_entries()
     if kwargs.get('unique_by_user'):
         user_dict = {}
+        # Start date of leaderboard
+        start_date_string = kwargs.get('start_date')
+        # End date of leaderboard
+        end_date_string = kwargs.get('end_date')
+        # If dates exist, convert them to datetime.date
+        if start_date_string and end_date_string:
+            start_date = datetime.datetime.strptime(start_date_string, "%m%d%Y").date()
+            end_date = datetime.datetime.strptime(end_date_string, "%m%d%Y").date()
         # Create a dictionary with user ids as the key
         for entry in entries:
-            # Set defaults for wins and points if nothing exists
-            user_dict.setdefault(entry.user_id, {})
-            user_dict[entry.user_id].setdefault('username', entry.username)
-            user_dict[entry.user_id].setdefault('points', 0)
-            user_dict[entry.user_id].setdefault('wins', 0)
-            user_dict[entry.user_id].setdefault('medals', [])
-            user_dict[entry.user_id].setdefault('suggestions', 0)
-            # Add the wins, points, medals, and suggestions for the user from this particular show
-            user_dict[entry.user_id]['points'] += entry.points
-            user_dict[entry.user_id]['wins'] += entry.wins
-            user_dict[entry.user_id]['medals'] += entry.medals
-            user_dict[entry.user_id]['suggestions'] += entry.suggestions
-            # Calculate the level they are at
-            user_dict[entry.user_id]['level'] = (user_dict[entry.user_id]['points'] / LEVEL_POINT) + 1
+            # Check for date ranges
+            if start_date and end_date:
+                show_date = entry.show.get().created.date()
+                if start_date <= show_date <= end_date:
+                    # Add the entry to the leaderboard user dictionary
+                    add_to_user_dict(user_dict, entry)
+            else:
+                # Add the entry to the leaderboard user dictionary
+                add_to_user_dict(user_dict, entry)
 
         user_list = []
         # Turn that dictionary into a list of dictionaries
@@ -188,15 +221,19 @@ def fetch_medals(**kwargs):
     return fetch_model_entities(Medal, **kwargs)
 
 
+def fetch_leaderboard_spans(**kwargs):
+    return fetch_model_entities(LeaderboardSpan, **kwargs)
+
+
 def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          used=None, voted_on=None,
-                         suggestion=None, uses_suggestions=None,
-                         month=None, year=None, user_id=None,
+                         suggestion=None, uses_suggestions=None, user_id=None,
                          limit=None, offset=None, keys_only=False,
                          order_by_preshow_value=False, delete=False, count=False,
                          order_by_ordering=False, order_by_points=False,
                          order_by_show_date=False, order_by_created=False,
-                         unique_by_user=False, test=None):
+                         unique_by_user=False, test=None,
+                         start_date=None, end_date=None,):
     args = []
     fetch_args = {}
     ordering = None
@@ -221,14 +258,6 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Fetch related to a suggestion
     if uses_suggestions != None:
         args.append(model.uses_suggestions == uses_suggestions)
-    # Fetch by month
-    if month != None:
-        ## ADD THIS LATER ##
-        pass
-    # Fetch by year
-    if year != None:
-        ## ADD THIS LATER ##
-        pass
     # Fetch by user_id
     if user_id != None:
         args.append(model.user_id == user_id)
@@ -302,8 +331,13 @@ def create_live_vote(create_data):
 def create_leaderboard_entry(create_data):
     return create_model_entity(LeaderboardEntry, create_data)
 
+
 def create_medal(create_data):
     return create_model_entity(Medal, create_data)
+
+
+def create_leaderboard_span(create_data):
+    return create_model_entity(LeaderboardSpan, create_data)
 
 
 def create_email_opt_out(create_data):
@@ -333,11 +367,12 @@ def get_live_vote_exists(show, vote_type, interval, session_id):
     return bool(LiveVote.query(*query_args).count())
 
 
-def get_unused_suggestions():
+def get_unused_suggestions(show):
     """Get unused suggestions for all vote types, categorized by vote type"""
     suggestion_pools = fetch_suggestion_pools()
     for suggestion_pool in suggestion_pools:
-        suggestions = fetch_suggestions(suggestion_pool=suggestion_pool.key,
+        suggestions = fetch_suggestions(show=show,
+                                        suggestion_pool=suggestion_pool.key,
                                         used=False,
                                         voted_on=False)
         setattr(suggestion_pool, 'suggestions', suggestions)
@@ -355,7 +390,9 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
     delete_id = request.get('delete_id')
     # If this is a brand new entry
     if entry_value:
+        # If the entry was already added
         already_exists = Suggestion.query(
+                             Suggestion.show == show_key,
                              Suggestion.value == entry_value,
                              Suggestion.suggestion_pool == suggestion_pool.key).get()
         if not already_exists:
@@ -384,13 +421,14 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
         suggestion_entity = ndb.Key(Suggestion, int(delete_id)).get()
         # Make sure the entry was either the session id that created it
         # Or this is an admin user
-        if session_id == suggestion_entity.session_id or is_admin:
+        if suggestion_entity and session_id == suggestion_entity.session_id or is_admin:
             suggestion_entity.key.delete()
     
     # If an new suggestion entity was created
     if suggestion_entity:
         # Have to sort first by suggestion key, since we query on it. Dumb...
-        suggestion_entities = get_suggestion_pool_page_suggestions(suggestion_pool.key,
+        suggestion_entities = get_suggestion_pool_page_suggestions(show_key,
+                                                                   suggestion_pool.key,
                                                                    ignore_key=suggestion_entity.key,
                                                                    ordered=False)
         suggestion_entities.sort(key=lambda x: (x.preshow_value, x.created), reverse=True)
@@ -399,7 +437,7 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
             # Add the newly added suggestion entity
             suggestion_entities.append(suggestion_entity)
     else:
-        suggestion_entities = get_suggestion_pool_page_suggestions(suggestion_pool.key)
+        suggestion_entities = get_suggestion_pool_page_suggestions(show_key, suggestion_pool.key)
     context['suggestions'] = suggestion_entities
     
     return context
@@ -414,9 +452,10 @@ def get_current_suggestion_pools(current_show):
     return suggestion_pools
 
 
-def get_suggestion_pool_page_suggestions(suggestion_pool, ignore_key=None,
+def get_suggestion_pool_page_suggestions(show_key, suggestion_pool, ignore_key=None,
                                          ordered=True):
-    query_args = [Suggestion.suggestion_pool == suggestion_pool,
+    query_args = [Suggestion.show == show_key,
+                  Suggestion.suggestion_pool == suggestion_pool,
                   Suggestion.used == False]
     # If we should ignore a specific key
     if ignore_key:
