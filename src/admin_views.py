@@ -46,7 +46,7 @@ class ShowPage(ViewBase):
             # If this suggestion vote has intervals
             if vote_type.has_intervals:
                 # Get the next interval
-                next_interval = vote_type.get_next_interval
+                next_interval = vote_type.get_next_interval(show.key)
                 # If there is a next interval
                 if next_interval != None:
                     # Set the current interval to the next interval

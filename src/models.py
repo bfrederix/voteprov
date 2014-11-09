@@ -40,7 +40,7 @@ class SuggestionPool(ndb.Model):
     
     @property
     def available_suggestions(self):
-        return Suggestion.query(Suggestion.show == get_current_show(),
+        return Suggestion.query(Suggestion.show == get_current_show().key,
                                 Suggestion.suggestion_pool == self.key,
                                 Suggestion.used == False).count()
     
@@ -84,19 +84,26 @@ class VoteType(ndb.Model):
     current_interval = ndb.IntegerProperty(indexed=False)
     current_init = ndb.DateTimeProperty(indexed=False)
 
-    @property
-    def get_next_interval(self):
+    def get_next_interval(self, show, current_voted_not_required=False):
         # If given an interval
         if self.current_interval != None:
             # Loop through the intervals in order
             for i in range(0, len(self.intervals)):
                 if self.current_interval == self.intervals[i]:
-                    # Get the minutes elapsed between the next interval in the loop
-                    # and the current interval in the loop
-                    try:
-                        return self.intervals[i+1]
-                    except IndexError:
-                        return None
+                    # Make sure that our current interval has been used
+                    current_voted = VotedItem.query(VotedItem.vote_type == self.key,
+                                                    VotedItem.show == show,
+                                                    VotedItem.interval == self.current_interval).count()
+                    # If the current interval has already been voted on, or we don't require that
+                    if current_voted or current_voted_not_required:
+                        # Get the next interval
+                        try:
+                            return self.intervals[i+1]
+                        except IndexError:
+                            return None
+                    # Otherwise we should stay on the current interval
+                    else:
+                        return self.current_interval
         # Otherwise, assume first interval
         else:
             try:
@@ -105,8 +112,8 @@ class VoteType(ndb.Model):
                 return None
         return None
     
-    def get_interval_gap(self, interval):
-        next_interval = self.get_next_interval
+    def get_interval_gap(self, show, interval):
+        next_interval = self.get_next_interval(show, current_voted_not_required=True)
         # If there is a next interval
         if interval != None and next_interval != None:
             return int(next_interval) - int(interval)
@@ -412,7 +419,7 @@ class Show(ndb.Model):
                                                     'id': suggestion.key.id(),
                                                     'count': count})
             # If there is a 1 minute interval gap between this interval and the next
-            if vote_type.get_interval_gap(current_interval) == 1:
+            if vote_type.get_interval_gap(self.key, current_interval) == 1:
                 vote_options['speedup'] = True
         elif display == 'result' and not voting_only:
             if vote_type.style == 'all-players':

@@ -26,7 +26,7 @@ class IntervalTimerJSON(ViewBase):
             # If the vote type has intervals
             if vote_type.has_intervals:
                 # Determine the gap between this interval and the next
-                interval_gap = vote_type.get_interval_gap(vote_type.current_interval)
+                interval_gap = vote_type.get_interval_gap(show.key, vote_type.current_interval)
                 if interval_gap and vote_type.current_init:
                     # Set the end of this gap
                     gap_end = back_to_tz(vote_type.current_init) + datetime.timedelta(minutes=interval_gap)
