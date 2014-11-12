@@ -2,6 +2,7 @@ import os
 import random
 import datetime
 from functools import wraps
+import logging
 
 import webapp2
 from webapp2_extras import sessions
@@ -140,6 +141,7 @@ class ViewBase(webapp2.RequestHandler):
         extend_response = graph.extend_access_token(FACEBOOK_APP_ID, FACEBOOK_APP_SECRET)
         extended_token = extend_response.get('access_token')
         self.session['fb_token'] = extended_token
+        logging.info("Extending token. User ID: {0}, Email: {1} Extended token: {2}".format(user_id, email, extended_token))
         # Try to get the user profile by user id
         user_profile = get_user_profile(user_id=str(user_id))
         # If we've found the user profile, update the session
@@ -148,6 +150,7 @@ class ViewBase(webapp2.RequestHandler):
             user_profile.fb_access_token = extended_token
             user_profile.login_type = 'facebook'
             user_profile.put()
+            logging.info("Profile exists. User ID: {0}, Email: {1} User Profile: {2}".format(user_id, email, user_profile))
             return user_profile
         # If we at least have an e-mail
         elif email:
@@ -159,8 +162,10 @@ class ViewBase(webapp2.RequestHandler):
                 user_profile.fb_access_token = extended_token
                 user_profile.login_type = 'facebook'
                 user_profile.put()
+                logging.info("Email exists. User ID: {0}, Email: {1} User Profile: {2}".format(user_id, email, user_profile))
                 return user_profile
             else:
+                logging.info("No profile. Creating. User ID: {0}, Email: {1}".format(user_id, email))
                 # Create the userprofile from the google login
                 user_profile = create_user_profile({'user_id': user_id,
                                                     'email': email,
