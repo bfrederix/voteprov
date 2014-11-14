@@ -58,6 +58,7 @@ class ViewBase(webapp2.RequestHandler):
         else:
             # Attempt to update the user profile's session with google auth
             self.user = self.google_login()
+            logging.info("Google user. User: {0}".format(self.user))
             # If the user is now logged in
             if self.user:
                 auth_url = users.create_logout_url(self.request.uri)
@@ -75,13 +76,25 @@ class ViewBase(webapp2.RequestHandler):
                             user = graph.get_object("me")
                         except facebook.GraphAPIError:
                             user = None
+                        logging.info("Facebook User. User: {0}".format(user))
                         if user and user.get("id"):
                             user_id = user.get("id")
                             # Get the profile
                             user_profile = get_user_profile(user_id=user_id)
                             # If not found by id, user email
-                            if not user_profile:
+                            if not user_profile and user.get("email"):
                                 user_profile = get_user_profile(email=user.get("email"))
+                            elif not user_profile:
+                                # We've tried everything else and need to create a new user profile here
+                                # Create the Facebook user profile with a blank e-mail
+                                user_profile_key = create_user_profile({'user_id': user_id,
+                                                                        'email': "email-dne-{0}".format(random.randrange(1, 100000)),
+                                                                        'username': user.get('name'),
+                                                                        'created': get_mountain_time(),
+                                                                        'current_session': str(self.session.get('id')),
+                                                                        'login_type': 'facebook'})
+                                # Get the user_profile object from the key
+                                user_profile = user_profile_key.get()
                             # If the user profile is found
                             if user_profile:
                                 # Update the current session
@@ -107,14 +120,14 @@ class ViewBase(webapp2.RequestHandler):
             # Try to get the user profile by user id
             user_profile = get_user_profile(user_id=user.user_id())
             # If we've found the user profile, update the session
-            if user_profile:
+            if user.user_id() and user_profile:
                 user_profile.current_session = str(self.session.get('id'))
                 user_profile.put()
                 return user_profile
             else:
                 # Try to get the user profile by email
                 user_profile = get_user_profile(email=user.email())
-                if user_profile:
+                if user.email() and user_profile:
                     # If the profile was found by email, set the current session
                     user_profile.current_session = str(self.session.get('id'))
                     user_profile.put()
@@ -215,7 +228,8 @@ class ViewBase(webapp2.RequestHandler):
         """Returns currently logged in user"""
         #print self.request.referer
         # Try to get the user profile by session id
-        user_profile = get_user_profile(current_session=self.session.get('id', '-1'))
+        user_profile = get_user_profile(current_session=self.session.get('id',
+                                                                         random.getrandbits(128)))
         #print "user_profile, ", user_profile
         if user_profile:
             return user_profile
