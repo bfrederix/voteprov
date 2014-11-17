@@ -32,8 +32,12 @@
 				<div class="col-md-12">
 					{% if current_show.is_today %}
 						{% if is_admin %}
+                            <a class-"text-center" href="/show_control/{{current_show.key.id}}/">
+								<div class="btn btn-danger btn-block btn-lg home-show-btn">Show Controller</div>
+							</a>
+                            <br/>
 							<a class-"text-center" href="/show/{{current_show.key.id}}/">
-								<div class="btn btn-danger btn-block btn-lg home-show-btn">Show Admin</div>
+								<div class="btn btn-danger btn-block btn-lg home-show-btn">Show Display</div>
 							</a>
 						{% else %}
 							<a class-"text-center" href="/live_vote/">

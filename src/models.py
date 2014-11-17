@@ -209,8 +209,6 @@ class VoteType(ndb.Model):
         if not vote_options:
             self.suggestion_pool.get().delete_all_suggestions_and_live_votes
             test_options = ["I'm JAZZED! Start the show already!",
-                            "I'm definitely excited.",
-                            "This seems... interesting...",
                             "I didn't actually read anything. I just pressed a button.",
                             "If you see me sleeping in the audience, try to keep it down."]
             vote_option_list = []
@@ -236,7 +234,7 @@ class Show(ndb.Model):
     # Assigned to show on creation
     vote_length = ndb.IntegerProperty(default=25, indexed=False)
     result_length = ndb.IntegerProperty(default=10, indexed=False)
-    vote_options = ndb.IntegerProperty(default=5, indexed=False)
+    vote_options = ndb.IntegerProperty(default=3, indexed=False)
     timezone = ndb.StringProperty(default='America/Denver', indexed=False)
     vote_types = ndb.KeyProperty(kind=VoteType, repeated=True, indexed=False)
     # All players in the show
@@ -285,7 +283,16 @@ class Show(ndb.Model):
     def current_vote_state(self):
         state_dict = {'state': 'default',
                       'display': 'default',
-                      'used_types': self.used_types_names}
+                      'used_types': self.used_types_names,
+                      'remaining_intervals': {}}
+        # Get the remaining vote type intervals
+        for vt_key in self.vote_types:
+            vt = vt_key.get()
+            # If the vote type has intervals
+            if vt.has_intervals:
+                # Update the remaining intervals with the vote type
+                state_dict['remaining_intervals'].update(
+                    {vt.name: vt.remaining_intervals})
         # If any vote has started, get the vote type
         if self.current_vote_type:
             vote_type = self.current_vote_type.get()
@@ -523,10 +530,12 @@ class Show(ndb.Model):
                     winning_count = vote_type.get_live_vote_count(self.key,
                                                                   suggestion=current_voted.suggestion,
                                                                   interval=current_interval)
+                current_voted_suggestion = current_voted.suggestion.get()
                 vote_options['voted'] = vote_type.name
                 vote_options['photo_filename'] = current_player.photo_filename
                 vote_options['value'] = current_voted.suggestion.get().value
-                vote_options['username'] = current_voted.suggestion.get().username
+                vote_options['username'] = current_voted_suggestion.username
+                vote_options['user_wins'] = current_voted_suggestion.user_show_wins
                 vote_options['count'] = winning_count
             elif vote_type.style == 'options':
                 # The winning suggestion hasn't been selected
@@ -560,9 +569,11 @@ class Show(ndb.Model):
                     winning_count = vote_type.get_live_vote_count(self.key,
                                                                   suggestion=current_voted.suggestion,
                                                                   interval=current_interval)
+                current_voted_suggestion = current_voted.suggestion.get()
                 vote_options['voted'] = vote_type.name
                 vote_options['value'] = current_voted.suggestion.get().value
-                vote_options['username'] = current_voted.suggestion.get().username
+                vote_options['username'] = current_voted_suggestion.username
+                vote_options['user_wins'] = current_voted_suggestion.user_show_wins
                 vote_options['count'] = winning_count
             elif vote_type.style == 'test':
                 # The winning suggestion hasn't been selected
@@ -661,6 +672,12 @@ class Suggestion(ndb.Model):
         if user_profile:
             return user_profile.username
         return None
+
+    @property
+    def user_show_wins(self):
+        return Suggestion.query(Suggestion.show == self.show,
+                                Suggestion.user_id == self.user_id,
+                                Suggestion.used == True).count()
 
     def put(self, *args, **kwargs):
         if not self.created:

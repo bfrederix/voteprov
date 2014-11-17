@@ -22,16 +22,18 @@ from service import (get_suggestion, get_player, get_show,
 from timezone import get_mountain_time, back_to_tz
 
 
-class ShowPage(ViewBase):
+class ShowControl(ViewBase):
     @admin_required
     def get(self, show_id):
         show = get_show(key_id=show_id)
         context = {'show': show,
-                   'now_tz': back_to_tz(get_mountain_time()),
-                   'host_url': self.request.host_url}
-        self.response.out.write(template.render(self.path('show.html'),
+                   'now_tz': back_to_tz(get_mountain_time())}
+        show = get_show(key_id=show_id)
+        context = {'show': show,
+                   'now_tz': back_to_tz(get_mountain_time())}
+        self.response.out.write(template.render(self.path('show_control.html'),
                                                 self.add_context(context)))
-    
+
     @admin_required
     def post(self, show_id):
         show = get_show(key_id=show_id)
@@ -63,7 +65,7 @@ class ShowPage(ViewBase):
                                delete=True)
             # Save the show and vote type's new current state
             vote_type.put()
-            show.put()                
+            show.put()
         # Admin is starting a recap
         elif self.request.get('recap') and self.context.get('is_admin', False):
             show.recap_init = get_mountain_time()
@@ -79,8 +81,19 @@ class ShowPage(ViewBase):
         context = {'show': show,
                    'now_tz': back_to_tz(get_mountain_time()),
                    'host_url': self.request.host_url}
-        self.response.out.write(template.render(self.path('show.html'),
-                                                self.add_context(context)))        
+        self.response.out.write(template.render(self.path('show_control.html'),
+                                                self.add_context(context)))
+
+
+class ShowDisplay(ViewBase):
+    @admin_required
+    def get(self, show_id):
+        show = get_show(key_id=show_id)
+        context = {'show': show,
+                   'now_tz': back_to_tz(get_mountain_time()),
+                   'host_url': self.request.host_url}
+        self.response.out.write(template.render(self.path('show_display.html'),
+                                                self.add_context(context)))
 
 
 def get_rand_player_list(players, star_players=[]):
@@ -401,15 +414,6 @@ class AddPlayers(ViewBase):
             created = True
         context = {'created': created}
         self.response.out.write(template.render(self.path('add_players.html'),
-                                                self.add_context(context)))
-
-
-class IntervalTimer(ViewBase):
-    @admin_required
-    def get(self):
-        context = {'show': self.current_show,
-                   'now_tz': back_to_tz(get_mountain_time())}
-        self.response.out.write(template.render(self.path('interval_timer.html'),
                                                 self.add_context(context)))
 
 

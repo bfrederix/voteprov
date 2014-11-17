@@ -61,9 +61,22 @@ $( document ).ready(function() {
 		// Create the scale for the vote count colors
 		scale = chroma.scale(HEAT_MAP_COLORS).domain([min_count, max_count], voting_options.length).out('hex');
 		$(element_id).find("span.badge").each(function(index) {
-			// update the voting count of the corresponding option index
-			$(this).text(voting_options[index]['count']);
-			var hex_color = scale(voting_options[index]['count']);
+		    new_count = parseInt(voting_options[index]['count']);
+		    previous_count = parseInt($(this).text());
+		    // Calculate the delta
+		    var delta = new_count - previous_count;
+		    // update the voting count of the corresponding option index
+		    $(this).text(new_count);
+		    // If there was a change
+		    if (delta > 0) {
+		        // Removed any previous delta fades
+		        $(this).siblings(".slidefade").remove();
+		        // Play the cha-ching sound
+                $.playSound('{{host_url}}{{audio_path}}cha_ching');
+		        // Create the delta fade
+		        $(this).after('<span class="slidefade">+' + delta + '</span>');
+		    }
+			var hex_color = scale(new_count);
 			// Set the background color, according to the color scale
 			$(this).css("background-color", hex_color);
 			$(this).css("color", idealTextColor(hex_color));
@@ -129,12 +142,12 @@ $( document ).ready(function() {
 		var option_row = $('<div class="row"></div>');
 		var option_column = $('<div class="col-sm-12"></div>');
 		// Create the button with the option name on it
-		var option_btn = $('<button class="btn btn-primary btn-block vote-option">' + voting_data['value'] + '</button>');
+		var option_btn = $('<button class="btn btn-primary btn-block vote-option moving-text-shadow">' + voting_data['value'] + '</button>');
 		// Add the option button to the option column
 		$(option_column).append($(option_btn));
 		var count_row = $('<div class="row text-center"></div>');
 		// Create the button that shows the count of votes
-		var option_count = $('<button class="btn btn-danger vote-option">' + voting_data['count'] + ' Votes!</button>');
+		var option_count = $('<button class="btn btn-danger vote-option">' + voting_data['count'] + ' Points!</button>');
 		// If there was more than zero votes for the item
 		if (voting_data['count'] > 0) {
 		    $(count_row).append($(option_count));
@@ -146,6 +159,11 @@ $( document ).ready(function() {
 		    else {
                 var spacer = $('<span>&nbsp;&nbsp;</span>');
                 var by_user = $('<button class="btn btn-success vote-option">Submitted by ' + voting_data['username'] + '</button>');
+                if (parseInt(voting_data['user_wins']) > 1) {
+                    $(by_user).addClass("fire");
+                    // Play the he's on fire noise
+                    $.playSound('{{host_url}}{{audio_path}}hes_on_fire');
+                }
                 $(count_row).append($(spacer));
                 $(count_row).append($(by_user));
             }
@@ -180,6 +198,7 @@ $( document ).ready(function() {
 			update_percent_only = typeof update_percent_only !== 'undefined' ? update_percent_only : false;
 			// Create the entire panel if the panel is empty
 			if (update_percent_only === false || $(element_id).children().length == 0) {
+			    var front = $('<figure class="front"></figure>');
 				var row = $('<div class="row"></div>');
 				var column = $('<div class="col-sm-11"></div>');
 				var panel_body = $('<div class="panel-body"></div>');
@@ -194,8 +213,10 @@ $( document ).ready(function() {
 				// Get the panel pieces
 				panel = panel_components['panel'];
 				panel_header = panel_components['panel_header'];
+				// Add the front of the flip card to the element
+				$(element_id).append($(front));
 				// Add the row to the element
-				$(element_id).append($(row));
+				$(front).append($(row));
 				// Add the column to the row
 				$(row).append($(column));
 				// Add the panel to the column
@@ -226,7 +247,10 @@ $( document ).ready(function() {
 		// We're in the result display
 		if (voting_data['display'] == 'result') {
 			// Show the voted option in the footer
-			create_voted_option(element_id, voting_data);
+			var back = $('<figure class="back"></figure>');
+			// Add the back of the flip card to the element
+			$(element_id).append($(back));
+			create_voted_option(back, voting_data);
 		}
 		
 		return panel
@@ -258,7 +282,7 @@ $( document ).ready(function() {
 					var player_number = parseInt(option_num) + 1;
 					var player_column = $('<div class="col-sm-2 role-player-panels"></div>');
 					var player_img = $('<img src="{{player_image_path}}' + option_data[option_num]['photo_filename'] + '" class="img-responsive img-thumbnail" />');
-					var player_btn = $('<button class="btn btn-default btn-block vote-option">Player&nbsp;' + player_number + '<br/><span class="badge count-font">0</span>&nbsp;Votes</button>');
+					var player_btn = $('<button class="btn btn-default btn-block vote-option">Player&nbsp;' + player_number + '<br/><span class="badge count-font">0</span>&nbsp;Points</button>');
 					// Add the player image to the player column
 					$(player_column).append($(player_img));
 					// Add the player button to the player column
@@ -321,7 +345,10 @@ $( document ).ready(function() {
 		}
 		// We're in the result display
 		else {
-			create_voted_player(element_id, voting_data);
+		    var back = $('<figure class="back"></figure>');
+            // Add the back of the flip card to the element
+            $(element_id).append($(back));
+			create_voted_player(back, voting_data);
 		}
 	}
 	
@@ -342,7 +369,7 @@ $( document ).ready(function() {
 		// Add the role button to the role column
 		$(role_column).append($(role_btn));
 		// Create the button that shows the count of votes
-		var role_count = $('<button class="btn btn-danger vote-option">' + voting_data['count'] + ' Votes!</button>');
+		var role_count = $('<button class="btn btn-danger vote-option">' + voting_data['count'] + ' Points!</button>');
 		$(count_row).append($(role_count));
 		// Add the row to the element
 		$(element_id).append($(row));
@@ -407,21 +434,23 @@ $( document ).ready(function() {
 					var vote_end = new Date();
 					vote_end.setSeconds(vote_end.getSeconds() + parseInt(voting_data['voting_length']));
 					// Delete the current voting display
-					$("#current-vote").empty();
+-                   $("#current-vote").empty();
 					if ('speedup' in voting_data) {
 						// Play the speedup sound
 						$.playSound('{{host_url}}{{audio_path}}smb_warning');
 					}
 					else {
 						// play the opening vote sound
-						$.playSound('{{host_url}}{{audio_path}}vote-chime');
+						$.playSound('{{host_url}}{{audio_path}}action-chime');
 					}
 				}
 				if (voting_data['display'] == 'result') {
-					// Delete the current voting display
-					$("#current-vote").empty();
 					// play the result sound
-					$.playSound('{{host_url}}{{audio_path}}action-chime');
+					$.playSound('{{host_url}}{{audio_path}}power_chord');
+					// Delete the current voting display
+-                   $("#current-vote").empty();
+					// Flip the to result
+					$("#current-vote").toggleClass('flipped');
 				}
 				// If it's a players only vote
 				if (voting_data['style'] == 'player-pool' | voting_data['style'] == 'all-players') {
@@ -435,12 +464,19 @@ $( document ).ready(function() {
 			}
 			// If we're on the select vote types screen
 			else {
+			    $("#current-vote").removeClass("flipped");
 				// Show the voting screen
 				$("#current-vote").hide();
 				// Show the nav bar and vote selection screen
 				$("#top-nav-bar").hide();
 				$("#vote-selection-screen").show();
-				// Loop through and hide the types that are already used
+				// Show the remaining amount of vote types
+				var remaining_intervals = voting_data['remaining_intervals'];
+				for (var remaining_index in remaining_intervals) {
+                    var remaining_id = '#remaining-' + remaining_index;
+                    $(remaining_id).text(remaining_intervals[remaining_index]);
+				}
+				// Loop through and hide the vote types that are already used
 				var used_types = voting_data['used_types'];
 				for (var used_index in used_types) {
 					var used_id = '#' + used_types[used_index] + '-vote';

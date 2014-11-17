@@ -25,9 +25,9 @@ from views_base import RobotsTXT, LoaderIO
 from user_views import (MainPage, LiveVote, AddSuggestions,
 						LiveVoteWorker, ShowLeaderboard,
 						Leaderboards, UserAccount, MedalsPage)
-from admin_views import (ShowPage, CreateShow, DeleteTools,
+from admin_views import (ShowDisplay, CreateShow, DeleteTools,
 						 SuggestionPools, VoteTypes,
-					     JSTestPage, AddPlayers, IntervalTimer,
+					     JSTestPage, AddPlayers, ShowControl,
 					     CreateMedals, ExportEmails)
 from json_views import (ShowJSON, IntervalTimerJSON, UpvoteJSON,
                         SessionLogout, FacebookLogin)
@@ -54,14 +54,14 @@ app = webapp2.WSGIApplication([
     (r'/user/(\d+)/', UserAccount),
     (r'/medals/', MedalsPage),
     # Admin URLS
-    (r'/show/(\d+)/', ShowPage),
+    (r'/show_control/(\d+)/', ShowControl),
+    (r'/show/(\d+)/', ShowDisplay),
     (r'/create_show/', CreateShow),
     (r'/vote_types/', VoteTypes),
     (r'/suggestion_pools/', SuggestionPools),
     (r'/create_medals/', CreateMedals),
     (r'/add_players/', AddPlayers),
     (r'/delete_tools/', DeleteTools),
-    (r'/interval_timer/', IntervalTimer),
     (r'/js_test/', JSTestPage),
     (r'/export_emails/', ExportEmails),
     # JSON ENDPOINT
