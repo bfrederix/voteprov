@@ -10,7 +10,7 @@ from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
                      get_show, get_user_profile, get_leaderboard_entry,
                      fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
-                     fetch_medals, fetch_leaderboard_spans,
+                     fetch_medals, fetch_leaderboard_spans, fetch_suggestions,
                      get_current_show, get_live_vote_exists,
                      create_live_vote, create_leaderboard_entry,
                      create_leaderboard_span, pre_show_voting_post,
@@ -305,6 +305,7 @@ class UserAccount(ViewBase):
         # IF a duplicate user profile was created, delete it!!
         if len(user_profiles) > 1:
             user_profiles[1].key.delete()
+        user_suggestions = fetch_suggestions(**{'user_id': user_id})
         show_entries = fetch_leaderboard_entries(user_id=user_id,
                                                  order_by_show_date=True)
         try:
@@ -315,6 +316,7 @@ class UserAccount(ViewBase):
                                  'suggestions': 0}
 
         context = {'show_entries': show_entries,
+                   'user_suggestions': user_suggestions,
                    'leaderboard_stats': leaderboard_stats,
                    'user_profile': user_profile,
                    'page_user_id': user_id}

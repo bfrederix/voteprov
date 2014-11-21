@@ -447,13 +447,13 @@ class ExportEmails(ViewBase):
                     email = user_profile.email
                     # If an email is attached, and the user has not opted out of emails
                     if email and not get_email_opt_out(email=email):
-                        user_dict.setdefault(email, [])
+                        user_dict.setdefault(email, [suggestion.user_id])
                         user_dict[email].append(suggestion.value)
             # Write the csv rows
-            for user_email, suggestion_list in user_dict.items():
+            for user_email, suggestion_data_list in user_dict.items():
                 row = [user_email]
                 # Add all the suggestions to the user's csv entry
-                for suggestion in suggestion_list:
+                for suggestion in suggestion_data_list:
                     row.append(suggestion)
                 writer.writerow(row)
             # Write as csv

@@ -57,7 +57,7 @@
                         </div>
                         <hr/>
                         {% if page_user_id == user.user_id %}
-                            <hr style="height:4px;border:none;color:#333;background-color:#333;"/>
+                            <hr class="thick"/>
                             <form class="form-horizontal" role="form" action="/user/{{page_user_id}}/" method="post">
                                 <div class="form-group">
                                      <label class="col-md-4 control-label">New Username:</label>
@@ -88,6 +88,38 @@
                         {% endif %}
 	                </div>
 	            </div>
+                {% if show_entries %}
+                    {% for show_entry in show_entries %}
+                        <div class="panel panel-primary">
+                            <div class="panel-heading x-large-font">{{show_entry.show_date|date:"l N jS, Y @ P"}}</div>
+	                            <div class="panel-body black-font large-font">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            Points Earned: {{show_entry.points}}
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <a href="/leaderboards/show/{{show_entry.show.id}}/">Show Leaderboard</a>
+                                        </div>
+                                    </div>
+                                    {% if user_suggestions %}
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                Suggestions ({{show_entry.wins}} Wins, {{show_entry.suggestions}} Total):&nbsp;|
+                                                {% for suggestion in user_suggestions %}
+                                                    {% if suggestion.show.id == show_entry.show.id %}
+                                                        {{suggestion.value}}{% if suggestion.used %}&nbsp;(W){% endif %}&nbsp;|
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% endif %}
 	        </div>
 	    </div>
 	</div>
