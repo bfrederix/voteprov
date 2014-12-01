@@ -65,6 +65,10 @@ div.medium-font {
 	font-size:small;
 }
 
+button.large-font {
+	font-size:large;
+}
+
 button.x-large-font {
 	font-size:x-large;
 }
@@ -293,6 +297,31 @@ hr.thick {
     border:none;
     color:#333;
     background-color:#333;
+}
+
+hr.thin {
+    height: 1px;
+    border: none;
+    margin: 0;
+    color: #333;
+    background-color: #333;
+}
+
+div.black-background{
+    background-color:black;
+}
+
+.black-font {
+    color: black;
+}
+
+img.recap-adjusted-img {
+    position: relative;
+    left: -20%;
+}
+
+a.recap-user-link {
+    color:#A30000;
 }
 
 /* For flipping */

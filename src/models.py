@@ -242,6 +242,7 @@ class Show(ndb.Model):
     # Finite amount of players to select from during the show
     player_pool = ndb.KeyProperty(kind=Player, repeated=True, indexed=False)
     created = ndb.DateTimeProperty(required=True)
+    archived = ndb.BooleanProperty(default=False)
     
     # Changes during live show
     current_vote_type = ndb.KeyProperty(kind=VoteType, indexed=False)
@@ -670,7 +671,10 @@ class Suggestion(ndb.Model):
     def username(self):
         user_profile = UserProfile.query(UserProfile.user_id == self.user_id).get()
         if user_profile:
-            return user_profile.username
+            try:
+                return user_profile.username.split('@')[0]
+            except IndexError:
+                return user_profile.username
         return None
 
     @property
@@ -781,7 +785,11 @@ class LeaderboardEntry(ndb.Model):
 
     @property
     def username(self):
-        return UserProfile.query(UserProfile.user_id == self.user_id).get().username
+        username = UserProfile.query(UserProfile.user_id == self.user_id).get().username
+        try:
+            return username.split('@')[0]
+        except IndexError:
+            return username
     
     @property
     def suggestions(self):

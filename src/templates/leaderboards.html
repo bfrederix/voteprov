@@ -10,13 +10,6 @@ $( document ).ready(function() {
             window.location.href = this.value;
         }        
     };
-    /*
-    document.getElementById("year").onchange = function() {
-        if (this.selectedIndex!==0) {
-            window.location.href = this.value;
-        }        
-    };
-    */
 });
 </script>
 {% endblock %}
@@ -43,6 +36,14 @@ $( document ).ready(function() {
 					<div class="btn btn-primary btn-block btn-lg home-show-btn">&nbsp;All-time Leaderboards&nbsp;</div>
 				</a>
             </div>
+            {% if show_id %}
+                &nbsp;
+                <div class="form-group">
+                    <a class-"text-center" href="/recap/{{show_id}}/">
+                        <div class="btn btn-info btn-block btn-lg home-show-btn">&nbsp;Show Recap&nbsp;</div>
+                    </a>
+                </div>
+            {% endif %}
             {% if show_id and is_admin and not medals_exist %}
                 &nbsp;
                 <div class="form-group">

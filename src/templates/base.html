@@ -77,6 +77,7 @@
                             <li><a href="/medals/"><strong>Medals</strong></a></li>
                         </ul>
                     </li>
+                    <li class="{% block recap-selected %}{% endblock %}"><a href="/recap/">Show Recaps</a></li>
     				{% if username %}
     				    <li {% block user-account-selected %}{% endblock %}><a href="/user/{{user.user_id}}/">My Account</a></li>
     				{% endif %}

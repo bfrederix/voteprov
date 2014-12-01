@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block recap-selected %} active{% endblock %}
+
+{% block add_head %}
+<script>
+$( document ).ready(function() {
+    document.getElementById("show").onchange = function() {
+        if (this.selectedIndex!==0) {
+            window.location.href = this.value;
+        }
+    };
+});
+</script>
+{% endblock %}
+
+{% block content %}
+	<div class="container-fluid">
+        <div class="row">
+            <div class="col-md-6 col-md-offset-3">
+                <form class="form-inline" role="form" action="/recap/{{show_id}}/" method="post">
+                    <div class="form-group">
+                        <label for="show">Show Recaps</label>
+                        <select id="show" class="form-control">
+                            <option value="">Select Show</option>
+                            {% for show in shows %}
+                                <option value="/recap/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y @ P"}}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    {% if show_id %}
+                        &nbsp;
+                        <div class="form-group">
+                            <a class="text-center" href="/leaderboards/show/{{show_id}}/">
+                                <div class="btn btn-primary btn-block btn-lg home-show-btn">&nbsp;View Show Leaderboard&nbsp;</div>
+                            </a>
+                        </div>
+                        <br/>
+                        {% for vote_type, vote_type_recap in show_recap.items %}
+                            {% if vote_type.get.style != "test" %}
+                                {% for vote_panel in vote_type_recap %}
+                                    <div class="panel panel-danger">
+                                        <div class="panel-heading x-large-font">{{vote_type.get.display_name}}</div>
+                                        {% if vote_panel.player %}
+                                            <div class="panel-body">
+                                                <div class="text-center recap-adjusted-img">
+                                                    <img src="{{player_image_path}}{{vote_panel.player.get.photo_filename}}" class="img-responsive img-thumbnail" />
+                                                </div>
+                                            </div>
+                                        {% endif %}
+                                        <div class="panel-footer black-background">
+                                            <div class="row">
+                                                <div class="col-sm-12">
+                                                    {% for suggestion in vote_panel.option_list %}
+                                                        <div id="{{suggestion.id}}" class="btn {% if suggestion == vote_panel.winning_suggestion %}btn-info{% else %}btn-primary{% endif %} btn-block large-font vote-option">
+                                                            {{forloop.counter}}. {{suggestion.get.value}}{% if suggestion == vote_panel.winning_suggestion %}<img src="/static/img/star-sprite.png" />{% endif %}
+                                                            <br/>
+                                                            Submitted by: {% if suggestion.get.username %}<a href="/user/{{suggestion.get.user_id}}/" class="recap-user-link">{{suggestion.get.username}}</a>{% else %}Anonymous{% endif %}
+                                                        </div>
+                                                    {% endfor %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

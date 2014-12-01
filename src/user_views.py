@@ -8,7 +8,7 @@ from google.appengine.api import taskqueue
 from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
-                     get_show, get_user_profile, get_leaderboard_entry,
+                     get_show, get_user_profile, get_show_recap,
                      fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
                      fetch_medals, fetch_leaderboard_spans, fetch_suggestions,
                      get_current_show, get_live_vote_exists,
@@ -287,6 +287,19 @@ class ShowLeaderboard(ViewBase):
                    'leaderboard_entries': leaderboard_entries,
                    'medals_exist': get_medals_exist(leaderboard_entries)}
         self.response.out.write(template.render(self.path('leaderboards.html'),
+                                                self.add_context(context)))
+
+
+class ShowRecap(ViewBase):
+    @redirect_locked
+    def get(self, show_id=None):
+        context = {'shows': fetch_shows()}
+        # If a specific show was requested
+        if show_id:
+            show_recap = get_show_recap(show_id)
+            context.update({'show_id': int(show_id),
+                            'show_recap': show_recap})
+        self.response.out.write(template.render(self.path('show_recap.html'),
                                                 self.add_context(context)))
 
 

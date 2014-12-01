@@ -73,7 +73,36 @@ indexes:
     direction: desc
   - name: created
 
+- kind: VoteOptions
+  properties:
+  - name: show
+  - name: vote_type
+    direction: desc
+  - name: interval
+    direction: desc
+
 - kind: VoteType
   properties:
   - name: occurs
   - name: name
+
+- kind: VotedItem
+  properties:
+  - name: show
+  - name: vote_type
+  - name: interval
+
+- kind: VotedItem
+  properties:
+  - name: show
+  - name: vote_type
+    direction: desc
+  - name: interval
+
+- kind: VotedItem
+  properties:
+  - name: show
+  - name: vote_type
+    direction: desc
+  - name: interval
+    direction: desc

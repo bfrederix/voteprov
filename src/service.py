@@ -34,6 +34,10 @@ def get_voted_item(**kwargs):
     return get_model_entity(VotedItem, **kwargs)
 
 
+def get_vote_options(**kwargs):
+    return get_model_entity(VoteOptions, **kwargs)
+
+
 def get_medal(**kwargs):
     return get_model_entity(Medal, **kwargs)
 
@@ -52,7 +56,8 @@ def get_email_opt_out(**kwargs):
 
 def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False,
                      show=None, vote_type=None, user_id=None, username=None,
-                     strip_username=None, current_session=None, email=None):
+                     strip_username=None, current_session=None, email=None,
+                     interval=None):
     # If key id is given, just return the key
     if key_id:
         key = ndb.Key(model, int(key_id))
@@ -82,6 +87,8 @@ def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False
         args.append(model.current_session == str(current_session))
     if email:
         args.append(model.email == email)
+    if interval or interval == 0:
+        args.append(model.interval == interval)
     item_entity = model.query(*args).get()
     # If we should delete the item
     if delete and item_entity:
@@ -152,6 +159,12 @@ def add_to_user_dict(user_dict, entry):
     :param entry: LeaderboardEntry
     :return: user_dict
     """
+    username = entry.username
+    # Try to remove the e-mail address from the username
+    try:
+        username = username.split('@')[0]
+    except IndexError:
+        pass
     # Set defaults for wins and points if nothing exists
     user_dict.setdefault(entry.user_id, {})
     user_dict[entry.user_id].setdefault('username', entry.username)
@@ -226,12 +239,13 @@ def fetch_leaderboard_spans(**kwargs):
 
 
 def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
-                         used=None, voted_on=None,
+                         used=None, voted_on=None, archived=None,
                          suggestion=None, uses_suggestions=None, user_id=None,
                          limit=None, offset=None, keys_only=False,
                          order_by_preshow_value=False, delete=False, count=False,
                          order_by_ordering=False, order_by_points=False,
                          order_by_show_date=False, order_by_created=False,
+                         order_by_intervals=False, order_by_vote_type=False,
                          unique_by_user=False, test=None,
                          start_date=None, end_date=None,):
     args = []
@@ -261,6 +275,9 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Fetch by user_id
     if user_id != None:
         args.append(model.user_id == user_id)
+    # Fetch archived or not
+    if archived != None:
+        args.append(model.archived == archived)
     
     # Delete the queried items
     if delete:
@@ -291,6 +308,12 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Order by the date the show was created
     if order_by_created:
         ordering += [-model.created]
+    # Order by the vote type
+    if order_by_vote_type:
+        ordering += [model.vote_type]
+    # Order by the intervals
+    if order_by_intervals:
+        ordering += [model.interval]
         
     if ordering:
         return model.query(*args).order(*ordering).fetch(**fetch_args)
@@ -369,14 +392,18 @@ def get_live_vote_exists(show, vote_type, interval, session_id):
 
 def get_unused_suggestions(show):
     """Get unused suggestions for all vote types, categorized by vote type"""
-    suggestion_pools = fetch_suggestion_pools()
-    for suggestion_pool in suggestion_pools:
-        suggestions = fetch_suggestions(show=show,
-                                        suggestion_pool=suggestion_pool.key,
-                                        used=False,
-                                        voted_on=False)
-        setattr(suggestion_pool, 'suggestions', suggestions)
-    return suggestion_pools
+    # Only return if show exists
+    if show:
+        suggestion_pools = fetch_suggestion_pools()
+        for suggestion_pool in suggestion_pools:
+            print "Show: %s" % show
+            suggestions = fetch_suggestions(show=show,
+                                            suggestion_pool=suggestion_pool.key,
+                                            used=False,
+                                            voted_on=False)
+            setattr(suggestion_pool, 'suggestions', suggestions)
+        return suggestion_pools
+    return []
 
 
 def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id, is_admin):
@@ -545,6 +572,27 @@ def update_user_profile(user_id, username):
         return user_profile.put().get()
     else:
         return None
+
+
+def get_show_recap(show_id):
+    show = get_show(key_id=show_id)
+    voted_items = fetch_voted_items(show=show.key,
+                                    order_by_intervals=True,
+                                    order_by_vote_type=True)
+    show_recap = {}
+    # Loop through all the winning voted suggestions
+    for voted_item in voted_items:
+        # Default this vote type key-value to a dictionary
+        show_recap.setdefault(voted_item.vote_type, [])
+        # Get the Vote options that went along with the winning suggestion
+        vote_options = get_vote_options(show=show.key,
+                                        vote_type=voted_item.vote_type,
+                                        interval=voted_item.interval)
+        vote_dict = {'option_list': vote_options.option_list,
+                     'player': voted_item.player,
+                     'winning_suggestion': voted_item.suggestion}
+        show_recap[voted_item.vote_type].append(vote_dict)
+    return show_recap
 
 
 def test_leaderboard_entries():
