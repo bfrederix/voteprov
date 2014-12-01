@@ -812,6 +812,13 @@ class UserProfile(ndb.Model):
             self.strip_username = self.username.replace(" ", "").lower()
         return super(UserProfile, self).put(*args, **kwargs)
 
+    @property
+    def username_email_strip(self):
+        try:
+            return self.username.split('@')[0]
+        except IndexError:
+            return self.username
+
 
 class EmailOptOut(ndb.Model):
     email = ndb.StringProperty(required=True)
