@@ -37,7 +37,7 @@ $( document ).ready(function() {
                         </div>
                         <br/>
                         {% for vote_type, vote_type_recap in show_recap.items %}
-                            {% if vote_type.get.style != "test" %}
+                            {% if vote_type.get.display_name and vote_type.get.style != "test" %}
                                 {% for vote_panel in vote_type_recap %}
                                     <div class="panel panel-danger">
                                         <div class="panel-heading x-large-font">{{vote_type.get.display_name}}</div>
@@ -52,11 +52,13 @@ $( document ).ready(function() {
                                             <div class="row">
                                                 <div class="col-sm-12">
                                                     {% for suggestion in vote_panel.option_list %}
-                                                        <div id="{{suggestion.id}}" class="btn {% if suggestion == vote_panel.winning_suggestion %}btn-info{% else %}btn-primary{% endif %} btn-block large-font vote-option">
-                                                            {{forloop.counter}}. {{suggestion.get.value}}{% if suggestion == vote_panel.winning_suggestion %}<img src="/static/img/star-sprite.png" />{% endif %}
-                                                            <br/>
-                                                            Submitted by: {% if suggestion.get.username %}<a href="/user/{{suggestion.get.user_id}}/" class="recap-user-link">{{suggestion.get.username}}</a>{% else %}Anonymous{% endif %}
-                                                        </div>
+                                                        {% if suggestion.get.value %}
+                                                            <div id="{{suggestion.id}}" class="btn {% if suggestion == vote_panel.winning_suggestion %}btn-info{% else %}btn-primary{% endif %} btn-block large-font vote-option">
+                                                                {{forloop.counter}}. {{suggestion.get.value}}{% if suggestion == vote_panel.winning_suggestion %}<img src="/static/img/star-sprite.png" />{% endif %}
+                                                                <br/>
+                                                                Submitted by: {% if suggestion.get.username %}<a href="/user/{{suggestion.get.user_id}}/" class="recap-user-link">{{suggestion.get.username}}</a>{% else %}Anonymous{% endif %}
+                                                            </div>
+                                                        {% endif %}
                                                     {% endfor %}
                                                 </div>
                                             </div>
