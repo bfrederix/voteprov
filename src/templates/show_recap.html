@@ -24,7 +24,7 @@ $( document ).ready(function() {
                         <select id="show" class="form-control">
                             <option value="">Select Show</option>
                             {% for show in shows %}
-                                <option value="/recap/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y @ P"}}</option>
+                                <option value="/recap/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y"}}</option>
                             {% endfor %}
                         </select>
                     </div>

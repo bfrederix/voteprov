@@ -241,7 +241,7 @@ class Leaderboards(ViewBase):
             create_leaderboard_span({'name': "Test",
                                      'start_date': datetime.date.today(),
                                      'end_date': datetime.date.today()})
-        context = {'shows': fetch_shows(**{'order_by_created': True}),
+        context = {'shows': fetch_shows(order_by_created=True),
                    'leaderboard_spans': leaderboard_spans,
                    'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
@@ -268,7 +268,7 @@ class ShowLeaderboard(ViewBase):
         if self.context.get('is_admin', False):
             medals_exist = get_medals_exist(leaderboard_entries)
         context = {'show_id': int(show_id),
-                   'shows': fetch_shows(),
+                   'shows': fetch_shows(order_by_created=True),
                    'leaderboard_entries': leaderboard_entries,
                    'medals_exist': medals_exist}
         self.response.out.write(template.render(self.path('leaderboards.html'),
@@ -283,7 +283,7 @@ class ShowLeaderboard(ViewBase):
         leaderboard_entries = fetch_leaderboard_entries(show=show.key,
                                                         order_by_points=True)
         context = {'show_id': int(show_id),
-                   'shows': fetch_shows(),
+                   'shows': fetch_shows(order_by_created=True),
                    'leaderboard_entries': leaderboard_entries,
                    'medals_exist': get_medals_exist(leaderboard_entries)}
         self.response.out.write(template.render(self.path('leaderboards.html'),
@@ -293,7 +293,7 @@ class ShowLeaderboard(ViewBase):
 class ShowRecap(ViewBase):
     @redirect_locked
     def get(self, show_id=None):
-        context = {'shows': fetch_shows()}
+        context = {'shows': fetch_shows(order_by_created=True)}
         # If a specific show was requested
         if show_id:
             show_recap = get_show_recap(show_id)
@@ -318,7 +318,7 @@ class UserAccount(ViewBase):
         # IF a duplicate user profile was created, delete it!!
         if len(user_profiles) > 1:
             user_profiles[1].key.delete()
-        user_suggestions = fetch_suggestions(**{'user_id': user_id})
+        user_suggestions = fetch_suggestions(user_id=user_id)
         show_entries = fetch_leaderboard_entries(user_id=user_id,
                                                  order_by_show_date=True)
         try:

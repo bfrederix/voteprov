@@ -26,7 +26,7 @@ $( document ).ready(function() {
                             >{{leaderboard_span.name}}</option>
                     {% endfor %}
 	                {% for show in shows %}
-                        <option value="/leaderboards/show/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y @ P"}}</option>
+                        <option value="/leaderboards/show/{{show.key.id}}/" {% if show_id == show.key.id %}selected{% endif %}>{{show.created|date:"l N jS, Y"}}</option>
                     {% endfor %}
                 </select>
             </div>
