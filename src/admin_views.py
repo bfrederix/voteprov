@@ -113,7 +113,7 @@ class CreateShow(ViewBase):
     @admin_required
     def get(self):
         context = {'vote_types': fetch_vote_types(order_by_ordering=True),
-                   'players': fetch_players()}
+                   'players': fetch_players(order_by_star=True)}
         self.response.out.write(template.render(self.path('create_show.html'),
                                                 self.add_context(context)))
 
@@ -122,7 +122,7 @@ class CreateShow(ViewBase):
         player_list = self.request.get_all('player_list')
         vote_type_list = self.request.get_all('vote_type_list')
         context = {'vote_types': fetch_vote_types(order_by_ordering=True),
-                   'players': fetch_players()}
+                   'players': fetch_players(order_by_star=True)}
         if player_list and vote_type_list:
             players = []
             star_players = []

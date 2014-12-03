@@ -246,6 +246,7 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
                          order_by_ordering=False, order_by_points=False,
                          order_by_show_date=False, order_by_created=False,
                          order_by_intervals=False, order_by_vote_type=False,
+                         order_by_star=False,
                          unique_by_user=False, test=None,
                          start_date=None, end_date=None,):
     args = []
@@ -314,6 +315,9 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
     # Order by the intervals
     if order_by_intervals:
         ordering += [model.interval]
+    # Order by the star players last
+    if order_by_star:
+        ordering += [model.star]
         
     if ordering:
         return model.query(*args).order(*ordering).fetch(**fetch_args)
