@@ -297,8 +297,10 @@ class ShowRecap(ViewBase):
         # If a specific show was requested
         if show_id:
             show_recap = get_show_recap(show_id)
+            show_date = get_show(key_id=show_id).created
             context.update({'show_id': int(show_id),
-                            'show_recap': show_recap})
+                            'show_recap': show_recap,
+                            'show_date': show_date})
         self.response.out.write(template.render(self.path('show_recap.html'),
                                                 self.add_context(context)))
 

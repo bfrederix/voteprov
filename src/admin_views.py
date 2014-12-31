@@ -454,7 +454,7 @@ class ExportEmails(ViewBase):
                 row = [user_email]
                 # Add all the suggestions to the user's csv entry
                 for suggestion in suggestion_data_list:
-                    row.append(suggestion)
+                    row.append(suggestion.encode('utf-8', 'ignore'))
                 writer.writerow(row)
             # Write as csv
             self.response.headers['Content-Type'] = 'text/csv; charset=utf-8'
