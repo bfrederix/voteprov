@@ -311,7 +311,7 @@ def fetch_model_entities(model, show=None, vote_type=None, suggestion_pool=None,
         ordering += [-model.created]
     # Order by the vote type
     if order_by_vote_type:
-        ordering += [model.vote_type]
+        ordering += [-model.vote_type]
     # Order by the intervals
     if order_by_intervals:
         ordering += [model.interval]
@@ -583,19 +583,18 @@ def get_show_recap(show_id):
     voted_items = fetch_voted_items(show=show.key,
                                     order_by_intervals=True,
                                     order_by_vote_type=True)
-    show_recap = {}
+    show_recap = []
     # Loop through all the winning voted suggestions
     for voted_item in voted_items:
-        # Default this vote type key-value to a dictionary
-        show_recap.setdefault(voted_item.vote_type, [])
         # Get the Vote options that went along with the winning suggestion
         vote_options = get_vote_options(show=show.key,
                                         vote_type=voted_item.vote_type,
                                         interval=voted_item.interval)
         vote_dict = {'option_list': vote_options.option_list,
                      'player': voted_item.player,
-                     'winning_suggestion': voted_item.suggestion}
-        show_recap[voted_item.vote_type].append(vote_dict)
+                     'winning_suggestion': voted_item.suggestion,
+                     'vote_type': getattr(voted_item.vote_type.get(), 'display_name', None)}
+        show_recap.append(vote_dict)
     return show_recap
 
 

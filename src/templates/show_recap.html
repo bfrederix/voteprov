@@ -22,35 +22,33 @@
                             <div class="btn btn-danger btn-block btn-lg home-show-btn">&nbsp;View Show Leaderboard&nbsp;</div>
                         </a>
                     <br/>
-                    {% for vote_type, vote_type_recap in show_recap.items %}
-                        {% if vote_type.get.display_name and vote_type.get.style != "test" %}
-                            {% for vote_panel in vote_type_recap %}
-                                <div class="panel panel-danger">
-                                    <div class="panel-heading x-large-font">{{vote_type.get.display_name}}</div>
-                                    {% if vote_panel.player %}
-                                        <div class="panel-body">
-                                            <div class="text-center recap-adjusted-img">
-                                                <img src="{{player_image_path}}{{vote_panel.player.get.photo_filename}}" class="img-responsive img-thumbnail" />
-                                            </div>
+                    {% for vote_panel in show_recap %}
+                        {% if vote_panel.vote_type and vote_panel.vote_type != "Test" %}
+                            <div class="panel panel-danger">
+                                <div class="panel-heading x-large-font">{{vote_panel.vote_type}}</div>
+                                {% if vote_panel.player %}
+                                    <div class="panel-body">
+                                        <div class="text-center recap-adjusted-img">
+                                            <img src="{{player_image_path}}{{vote_panel.player.get.photo_filename}}" class="img-responsive img-thumbnail" />
                                         </div>
-                                    {% endif %}
-                                    <div class="panel-footer black-background">
-                                        <div class="row">
-                                            <div class="col-sm-12">
-                                                {% for suggestion in vote_panel.option_list %}
-                                                    {% if suggestion.get.value %}
-                                                        <div id="{{suggestion.id}}" class="btn {% if suggestion == vote_panel.winning_suggestion %}btn-info{% else %}btn-primary{% endif %} btn-block large-font vote-option">
-                                                            {{forloop.counter}}. {{suggestion.get.value}}{% if suggestion == vote_panel.winning_suggestion %}<img src="/static/img/star-sprite.png" />{% endif %}
-                                                            <br/>
-                                                            Submitted by: {% if suggestion.get.username %}<a href="/user/{{suggestion.get.user_id}}/" class="recap-user-link">{{suggestion.get.username}}</a>{% else %}Anonymous{% endif %}
-                                                        </div>
-                                                    {% endif %}
-                                                {% endfor %}
-                                            </div>
+                                    </div>
+                                {% endif %}
+                                <div class="panel-footer black-background">
+                                    <div class="row">
+                                        <div class="col-sm-12">
+                                            {% for suggestion in vote_panel.option_list %}
+                                                {% if suggestion.get.value %}
+                                                    <div id="{{suggestion.id}}" class="btn {% if suggestion == vote_panel.winning_suggestion %}btn-info{% else %}btn-primary{% endif %} btn-block large-font vote-option">
+                                                        {{forloop.counter}}. {{suggestion.get.value}}{% if suggestion == vote_panel.winning_suggestion %}<img src="/static/img/star-sprite.png" />{% endif %}
+                                                        <br/>
+                                                        Submitted by: {% if suggestion.get.username %}<a href="/user/{{suggestion.get.user_id}}/" class="recap-user-link">{{suggestion.get.username}}</a>{% else %}Anonymous{% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            {% endfor %}
                                         </div>
                                     </div>
                                 </div>
-                            {% endfor %}
+                            </div>
                         {% endif %}
                     {% endfor %}
                 {% endif %}
