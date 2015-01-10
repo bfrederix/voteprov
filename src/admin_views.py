@@ -467,6 +467,13 @@ class ExportEmails(ViewBase):
                                                     self.add_context(context)))
 
 
+class PreShow(ViewBase):
+    @admin_required
+    def get(self):
+        self.response.out.write(template.render(self.path('pre_show.html'),
+                                                self.add_context({})))
+
+
 class MockObject(object):
     def __init__(self, **kwargs):
         for key, value in kwargs.items():

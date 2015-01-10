@@ -29,7 +29,7 @@ from user_views import (MainPage, LiveVote, AddSuggestions,
 from admin_views import (ShowDisplay, CreateShow, DeleteTools,
 						 SuggestionPools, VoteTypes,
 					     JSTestPage, AddPlayers, ShowControl,
-					     CreateMedals, ExportEmails)
+					     CreateMedals, ExportEmails, PreShow)
 from json_views import (ShowJSON, IntervalTimerJSON, UpvoteJSON,
                         SessionLogout, FacebookLogin)
 
@@ -57,6 +57,7 @@ app = webapp2.WSGIApplication([
     (r'/user/(\d+)/', UserAccount),
     (r'/medals/', MedalsPage),
     # Admin URLS
+    (r'/pre_show/', PreShow),
     (r'/show_control/(\d+)/', ShowControl),
     (r'/show/(\d+)/', ShowDisplay),
     (r'/create_show/', CreateShow),
