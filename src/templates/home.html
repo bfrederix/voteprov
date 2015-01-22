@@ -14,6 +14,12 @@
                                 <div class="btn btn-primary btn-block btn-lg home-show-btn" onclick="facebook_login();"><div class="facebook-icon-large pull-left"></div>&nbsp;{{auth_action}} with Facebook</div>
                             </a>
                             <br/>
+                            <div class="row">
+                                <div class="col-sm-12 text-center">
+                                    <div class="fb-like" data-href="https://www.facebook.com/adventureprov" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
+                                </div>
+                            </div>
+                            <br/>
 				            <a href="{{auth_url}}">
                                 <div class="btn btn-info btn-block btn-lg home-show-btn"><div class="google-icon-large pull-left"></div>&nbsp;{{auth_action}} with Google</div>
                             </a>
@@ -26,26 +32,35 @@
                         <div class="alert alert-info" role="alert">Note: If you log in, we may e-mail you Adventure-prov show announcements. You may opt out at any time.</div>
 				    </div>
 			    </div>
-			    <hr/>
 			{% endif %}
   			<div class="row">
 				<div class="col-md-12">
 					{% if current_show.is_today %}
 						{% if is_admin %}
-                            <a class-"text-center" href="/show_control/{{current_show.key.id}}/">
+                            <a class="text-center" href="/show_control/{{current_show.key.id}}/">
 								<div class="btn btn-danger btn-block btn-lg home-show-btn">Show Controller</div>
 							</a>
                             <br/>
-							<a class-"text-center" href="/show/{{current_show.key.id}}/">
+							<a class="text-center" href="/show/{{current_show.key.id}}/">
 								<div class="btn btn-danger btn-block btn-lg home-show-btn">Show Display</div>
 							</a>
 						{% else %}
-							<a class-"text-center" href="/live_vote/">
+							<a class="text-center" href="/live_vote/">
 								<div class="btn btn-danger btn-block btn-lg home-show-btn">Live Show Voting!</div>
 							</a>
 						{% endif %}
 					{% else %}
-						<div class="btn btn-primary btn-block btn-lg header-btn">No Current Show</div>
+						<a class="text-center" href="http://www.bovinemetropolis.com/">
+                            <div class="btn btn-danger btn-block btn-lg home-show-btn">Show Not Started - Buy Tickets!</div>
+                        </a>
+                        <br/>
+                        <a class="text-center" href="/leaderboards/">
+                            <div class="btn btn-success btn-block btn-lg home-show-btn">Leaderboards</div>
+                        </a>
+                        <br/>
+                        <a class="text-center" href="/recap/">
+                            <div class="btn btn-warning btn-block btn-lg home-show-btn">Show Recaps</div>
+                        </a>
 					{% endif %}
 				</div>
 			</div>
@@ -62,12 +77,6 @@
                 </div>
                 <br/>
             {% endfor %}
-
-            <div class="row">
-                <div class="col-sm-12 text-center">
-                    <div class="fb-like" data-href="https://www.facebook.com/adventureprov" data-layout="button_count" data-action="like" data-show-faces="true" data-share="true"></div>
-                </div>
-            </div>
 			
 		</div>
 	</div>
