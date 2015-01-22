@@ -272,7 +272,34 @@ class RobotsTXT(webapp2.RequestHandler):
     def get(self):
         # Set to not be indexed
         self.response.headers['Content-Type'] = 'text/plain'
-        self.response.out.write("User-agent: *\nDisallow: /")
+        self.response.out.write("User-agent: *\nAllow: /$\nAllow: /leaderboards\nAllow: /recap\nAllow: /user\nAllow: /medals\nDisallow: /")
+
+
+class SitemapXML(webapp2.RequestHandler):
+    def get(self):
+        # Set to not be indexed
+        self.response.headers['Content-Type'] = 'text/xml'
+        self.response.out.write("""<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url>
+<loc>http://www.adventure-prov.com/</loc>
+<changefreq>weekly</changefreq>
+<priority>0.9</priority>
+</url>
+<url>
+<loc>http://www.adventure-prov.com/recap/</loc>
+<changefreq>weekly</changefreq>
+<priority>0.8</priority>
+</url>
+<url>
+<loc>http://www.adventure-prov.com/leaderboards/</loc>
+<changefreq>weekly</changefreq>
+<priority>0.7</priority>
+</url>
+<url>
+<loc>http://www.adventure-prov.com/medals/</loc>
+<priority>0.1</priority>
+</url>
+</urlset>""")
 
 
 class LoaderIO(webapp2.RequestHandler):

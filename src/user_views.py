@@ -8,7 +8,7 @@ from google.appengine.api import taskqueue
 from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
-                     get_show, get_user_profile, get_show_recap,
+                     get_show, get_user_profile,
                      fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
                      fetch_medals, fetch_leaderboard_spans, fetch_suggestions,
                      get_current_show, get_live_vote_exists,
@@ -16,6 +16,7 @@ from service import (get_suggestion_pool, get_suggestion, get_player,
                      create_leaderboard_span, pre_show_voting_post,
                      get_suggestion_pool_page_suggestions,
                      award_leaderboard_medals, update_user_profile)
+from caching import get_cached_show_recap
 
 
 # HARDCODED SUGGESTION LIMIT
@@ -296,7 +297,7 @@ class ShowRecap(ViewBase):
         context = {'shows': fetch_shows(order_by_created=True)}
         # If a specific show was requested
         if show_id:
-            show_recap = get_show_recap(show_id)
+            show_recap = get_cached_show_recap(show_id)
             show_date = get_show(key_id=show_id).created
             context.update({'show_id': int(show_id),
                             'show_recap': show_recap,

@@ -21,7 +21,7 @@
 import os
 import webapp2
 
-from views_base import RobotsTXT, LoaderIO
+from views_base import RobotsTXT, LoaderIO, SitemapXML
 from user_views import (MainPage, LiveVote, AddSuggestions,
 						LiveVoteWorker, ShowLeaderboard,
 						Leaderboards, UserAccount, MedalsPage,
@@ -41,9 +41,10 @@ config = {'webapp2_extras.sessions': {
 
 
 app = webapp2.WSGIApplication([
-	# Robots.txt
+	# Basic Web Views
 	(r'/robots.txt', RobotsTXT),
 	(r'/loaderio-9b6fa50492da1609dc61b9198b767688.txt', LoaderIO),
+    (r'/sitemap.xml', SitemapXML),
 	# User pages
     (r'/', MainPage),
     (r'/leaderboards/show/(\d+)/', ShowLeaderboard),
