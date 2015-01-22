@@ -46,6 +46,10 @@ def get_leaderboard_entry(**kwargs):
     return get_model_entity(LeaderboardEntry, **kwargs)
 
 
+def get_leaderboard_span(**kwargs):
+    return get_model_entity(LeaderboardSpan, **kwargs)
+
+
 def get_user_profile(**kwargs):
     return get_model_entity(UserProfile, **kwargs)
 
@@ -57,7 +61,7 @@ def get_email_opt_out(**kwargs):
 def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False,
                      show=None, vote_type=None, user_id=None, username=None,
                      strip_username=None, current_session=None, email=None,
-                     interval=None):
+                     interval=None, start_date=None, end_date=None):
     # If key id is given, just return the key
     if key_id:
         key = ndb.Key(model, int(key_id))
@@ -89,6 +93,9 @@ def get_model_entity(model, key_id=None, name=None, key_only=False, delete=False
         args.append(model.email == email)
     if interval or interval == 0:
         args.append(model.interval == interval)
+    if start_date and end_date:
+        args.append(model.start_date == start_date)
+        args.append(model.end_date == end_date)
     item_entity = model.query(*args).get()
     # If we should delete the item
     if delete and item_entity:
@@ -195,13 +202,9 @@ def fetch_leaderboard_entries(**kwargs):
     if kwargs.get('unique_by_user'):
         user_dict = {}
         # Start date of leaderboard
-        start_date_string = kwargs.get('start_date')
+        start_date = kwargs.get('start_date')
         # End date of leaderboard
-        end_date_string = kwargs.get('end_date')
-        # If dates exist, convert them to datetime.date
-        if start_date_string and end_date_string:
-            start_date = datetime.datetime.strptime(start_date_string, "%m%d%Y").date()
-            end_date = datetime.datetime.strptime(end_date_string, "%m%d%Y").date()
+        end_date = kwargs.get('end_date')
         # Create a dictionary with user ids as the key
         for entry in entries:
             # Check for date ranges

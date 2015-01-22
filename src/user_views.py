@@ -8,7 +8,7 @@ from google.appengine.api import taskqueue
 from views_base import ViewBase, redirect_locked, admin_required
 from timezone import get_mountain_time
 from service import (get_suggestion_pool, get_suggestion, get_player,
-                     get_show, get_user_profile,
+                     get_show, get_user_profile, get_leaderboard_span,
                      fetch_shows, fetch_leaderboard_entries, fetch_user_profiles,
                      fetch_medals, fetch_leaderboard_spans, fetch_suggestions,
                      get_current_show, get_live_vote_exists,
@@ -232,9 +232,21 @@ class AddSuggestions(ViewBase):
 class Leaderboards(ViewBase):
     @redirect_locked
     def get(self, start_date=None, end_date=None):
+        # If dates exist, convert them to datetime.date
+        if start_date and end_date:
+            start_date = datetime.datetime.strptime(start_date, "%m%d%Y").date()
+            end_date = datetime.datetime.strptime(end_date, "%m%d%Y").date()
         leaderboard_kwargs = {'start_date': start_date,
                               'end_date': end_date,
                               'unique_by_user': True}
+        # If we are currently displaying a span
+        if start_date:
+            current_leaderboard_span = get_leaderboard_span(start_date=start_date,
+                                                            end_date=end_date)
+            print "Yep, ", current_leaderboard_span
+        else:
+            print "Nope"
+            current_leaderboard_span = None
         leaderboard_entries = fetch_leaderboard_entries(**leaderboard_kwargs)
         leaderboard_spans = fetch_leaderboard_spans()
         # Create an initial leaderboard span if one doesn't exist yet
@@ -243,6 +255,7 @@ class Leaderboards(ViewBase):
                                      'start_date': datetime.date.today(),
                                      'end_date': datetime.date.today()})
         context = {'shows': fetch_shows(order_by_created=True),
+                   'current_leaderboard_span': current_leaderboard_span,
                    'leaderboard_spans': leaderboard_spans,
                    'leaderboard_entries': leaderboard_entries}
         self.response.out.write(template.render(self.path('leaderboards.html'),
@@ -265,11 +278,14 @@ class ShowLeaderboard(ViewBase):
         leaderboard_entries = fetch_leaderboard_entries(show=show.key,
                                                         order_by_points=True,
                                                         test=self.request.get('test'))
+        leaderboard_spans = fetch_leaderboard_spans()
         # If user is an admin
         if self.context.get('is_admin', False):
             medals_exist = get_medals_exist(leaderboard_entries)
         context = {'show_id': int(show_id),
+                   'show_date': show.created,
                    'shows': fetch_shows(order_by_created=True),
+                   'leaderboard_spans': leaderboard_spans,
                    'leaderboard_entries': leaderboard_entries,
                    'medals_exist': medals_exist}
         self.response.out.write(template.render(self.path('leaderboards.html'),
@@ -283,8 +299,11 @@ class ShowLeaderboard(ViewBase):
             award_leaderboard_medals(show.key)
         leaderboard_entries = fetch_leaderboard_entries(show=show.key,
                                                         order_by_points=True)
+        leaderboard_spans = fetch_leaderboard_spans()
         context = {'show_id': int(show_id),
+                   'show_date': show.created,
                    'shows': fetch_shows(order_by_created=True),
+                   'leaderboard_spans': leaderboard_spans,
                    'leaderboard_entries': leaderboard_entries,
                    'medals_exist': get_medals_exist(leaderboard_entries)}
         self.response.out.write(template.render(self.path('leaderboards.html'),
