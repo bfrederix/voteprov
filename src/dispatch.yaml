@@ -1,0 +1,8 @@
+dispatch:
+  # Go used for just the API portion
+  - url: "*/api*"
+    module: goapi
+
+  # Default module serves everything else
+  - url: "*/*"
+    module: default
