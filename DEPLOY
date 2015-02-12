@@ -1,0 +1,5 @@
+# Deploy to the server
+appcfg.py update app.yaml goapi.yaml pythonapp.yaml
+
+# Deploy Dispatch
+appcfg.py update_dispatch .
