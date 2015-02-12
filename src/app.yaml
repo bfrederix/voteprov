@@ -2,10 +2,7 @@ application: deadimprov
 version: 1
 runtime: python27
 api_version: 1
-threadsafe: true
-
-#builtins:
-#- remote_api: on
+threadsafe: false
 
 handlers:
 - url: /favicon\.ico
@@ -17,17 +14,3 @@ handlers:
 
 - url: /static
   static_dir: static
-
-#- url: /localhost:8088/_ah/remote_api
-#  script: google.appengine.ext.remote_api.handler.app
-#  login: admin
-
-- url: .*
-  script: main.app
-
-libraries:
-- name: webapp2
-  version: "2.5.2"
-
-- name: ssl
-  version: latest
