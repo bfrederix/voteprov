@@ -4,18 +4,20 @@ import (
 	"goapi/src/github.com/gorilla/mux"
     "fmt"
     "net/http"
+	"log"
 )
 
-func Index(rw http.ResponseWriter, r *http.Request) {
-	GetPlayer(rw, r)
-    fmt.Fprint(rw, "Welcome!")
+func Entity(rw http.ResponseWriter, r *http.Request) {
+	entity := GetModelEntity(rw, r)
+	log.Println("Logging: ", "Hello!")
+    fmt.Fprint(rw, "Welcome! ", entity.Name)
 }
 
 
 func CreateHandler() *mux.Router {
 	r := mux.NewRouter()
 	s := r.PathPrefix("/v1").Subrouter()
-	s.HandleFunc("/player/{playerId}", Index)
+	s.HandleFunc("/{entityType}/{entityId}", Entity)
 
 	return r
 }
