@@ -2,22 +2,41 @@ package api
 
 import (
 	"goapi/src/github.com/gorilla/mux"
-    "fmt"
+    //"fmt"
     "net/http"
 	"log"
+	"encoding/json"
 )
 
-func Entity(rw http.ResponseWriter, r *http.Request) {
-	entity := GetModelEntity(rw, r)
+func PlayerAPIGet(rw http.ResponseWriter, r *http.Request) {
+	// Get the player entity
+	player := GetPlayer(rw, r)
 	log.Println("Logging: ", "Hello!")
-    fmt.Fprint(rw, "Welcome! ", entity.Name)
+	// Encode the player into JSON output
+	json.NewEncoder(rw).Encode(player)
+    //fmt.Fprint(rw, "Welcome! ", player.Name)
 }
 
+func PlayersAPIGet(rw http.ResponseWriter, r *http.Request) {
+	// Get the player entity
+	players := GetPlayers(rw, r)
+	log.Println("Logging: ", "Hello!")
+	// Encode the player into JSON output
+	json.NewEncoder(rw).Encode(players)
+    //fmt.Fprint(rw, "Welcome! ", player.Name)
+}
+
+func ShowsAPIGet(rw http.ResponseWriter, r *http.Request) {
+	shows := GetShows(rw, r)
+	json.NewEncoder(rw).Encode(shows)
+}
 
 func CreateHandler() *mux.Router {
 	r := mux.NewRouter()
 	s := r.PathPrefix("/v1").Subrouter()
-	s.HandleFunc("/{entityType}/{entityId}", Entity)
+	s.HandleFunc("/player/{entityId}/", PlayerAPIGet)
+	s.HandleFunc("/players/", PlayersAPIGet)
+	s.HandleFunc("/shows/", ShowsAPIGet)
 
 	return r
 }
