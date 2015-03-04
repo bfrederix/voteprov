@@ -49,52 +49,54 @@ func GetPlayer(rw http.ResponseWriter, r *http.Request) (Player) {
 	return player
 }
 
-/*
-func GetModelEntities(rw http.ResponseWriter, r *http.Request) {//(appengine.Context, *datastore.Key) {
+
+func GetModelEntities(rw http.ResponseWriter, r *http.Request, modelType string) (appengine.Context, *datastore.Query) {
 	c := appengine.NewContext(r)
+	q := datastore.NewQuery(modelType)
+	queryParams := r.URL.Query()
+	log.Println("Query Params: ", queryParams)
+	if queryParams == nil {
+		return c, q
+	}
+	if queryParams["archived"] != nil {
+		archived, err := strconv.ParseBool(queryParams["archived"][0])
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		q = q.Filter("archived =", archived)
+	}
+	if queryParams["order_by_created"] != nil {
+		orderByCreated, err := strconv.ParseBool(queryParams["order_by_created"][0])
+		if err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		if orderByCreated == true {
+			q = q.Order("created")
+		}
+	}
+
+	return c, q
+}
+
+
+func GetPlayers(rw http.ResponseWriter, r *http.Request) ([]Player) {
+	c, q := GetModelEntities(rw, r, "Player")
+	var players []Player
 	_, err := q.GetAll(c, &players) // _ is keys
 	if err != nil {
         http.Error(rw, err.Error(), http.StatusInternalServerError)
     }
-	err := errors.New("an error")
-	//http.Error(rw, err.Error(), http.StatusInternalServerError)
-	return
-}
-*/
 
-func GetPlayers(rw http.ResponseWriter, r *http.Request) ([]Player) {
-	q := datastore.NewQuery("Player")
-	var players []Player
-	c := appengine.NewContext(r)
-	_, err := q.GetAll(c, &players) // _ is keys
-	if err != nil {
-        c.Errorf("Fetching Players: %v", err)
-        return nil
-    }
 	return players
 }
 
 
 func GetShows(rw http.ResponseWriter, r *http.Request) ([]Show) {
-	c := appengine.NewContext(r)
-	q := datastore.NewQuery("Show")
-	var filteredQ = q
-	queryParams := r.URL.Query()
-	switch {
-	case queryParams["archived"] != nil:
-		archived, err := strconv.ParseBool(queryParams["archived"][0])
-		log.Println("GetShows: ", archived)
-		if err != nil {
-			c.Errorf("Fetching Shows: %v", err)
-			return nil
-		}
-		filteredQ = q.Filter("archived =", archived)
-	}
+	c, q := GetModelEntities(rw, r, "Show")
 	var shows []Show
-	_, err := filteredQ.GetAll(c, &shows) // _ is keys
+	_, err := q.GetAll(c, &shows) // _ is keys
 	if err != nil {
-        c.Errorf("Fetching Shows: %v", err)
-        return nil
+        http.Error(rw, err.Error(), http.StatusInternalServerError)
     }
 
 	return shows

@@ -27,6 +27,11 @@ indexes:
   - name: show_date
     direction: desc
 
+- kind: Show
+  properties:
+  - name: archived
+  - name: created
+
 - kind: Suggestion
   properties:
   - name: show
