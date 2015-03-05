@@ -22,9 +22,6 @@ type SuggestionPool struct {
 }
 
 
-
-
-
 type Show struct {
 	VoteLength      int64            `datastore:"vote_length" json:"vote_length"`
 	ResultLength    int64            `datastore:"result_length" json:"result_length"`
@@ -41,3 +38,14 @@ type Show struct {
 	RecapInit       time.Time        `datastore:"recap_init" json:"recap_init"`
 	Locked          bool             `datastore:"locked" json:"locked"`
 }
+
+
+type LeaderboardEntry struct {
+	Show     *datastore.Key   `datastore:"show" json:"show"`
+	ShowDate time.Time        `datastore:"show_date" json:"show_date"`
+	UserID   string           `datastore:"user_id" json:"user_id"`
+	Points   int64            `datastore:"points" json:"points"`
+	Wins     int64            `datastore:"wins" json:"wins"`
+	Medals   []*datastore.Key `datastore:"medals" json:"medals"`
+}
+
