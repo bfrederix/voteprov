@@ -90,6 +90,9 @@ func GetModelEntities(rw http.ResponseWriter, r *http.Request, modelType string,
 }
 
 
+// Need to add a new function that can create the query
+// With just context and queryParams so that we can use it for setting properties
+
 ///////////////////////// Single Item Get /////////////////////////////////
 
 
@@ -102,6 +105,8 @@ func GetPlayer(rw http.ResponseWriter, r *http.Request, hasID bool) (Player) {
 		if err := datastore.Get(c, playerKey, &player); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 		}
+		// Make sure the image path is set
+		player.SetProperties()
 		return player
 	} else {
 		var players []Player
@@ -109,7 +114,34 @@ func GetPlayer(rw http.ResponseWriter, r *http.Request, hasID bool) (Player) {
 		if _, err := q.GetAll(c, &players); err != nil {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 		}
+		// Set the non-model fields
+		players[0].SetProperties()
 		return players[0]
+	}
+}
+
+
+func GetUserProfile(rw http.ResponseWriter, r *http.Request, hasID bool) (UserProfile) {
+	if hasID == true {
+		var userProfile UserProfile
+		c, userProfileKey := GetEntityKeyByURLIDs(rw, r, "UserProfile")
+
+		// Try to load the data into the UserProfile struct model
+		if err := datastore.Get(c, userProfileKey, &userProfile); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		// Make sure the image path is set
+		//userProfile.SetProperties()
+		return userProfile
+	} else {
+		var userProfiles []UserProfile
+		c, q := GetModelEntities(rw, r, "UserProfile", 1)
+		if _, err := q.GetAll(c, &userProfiles); err != nil {
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		}
+		// Set the non-model fields
+		//userProfiles[0].SetProperties()
+		return userProfiles[0]
 	}
 }
 
@@ -123,7 +155,11 @@ func GetPlayers(rw http.ResponseWriter, r *http.Request) ([]Player) {
 	if _, err := q.GetAll(c, &players); err != nil {
         http.Error(rw, err.Error(), http.StatusInternalServerError)
     }
-
+	// Set the non-model fields
+	for i := range players {
+	    player := &players[i]
+        player.SetProperties()
+    }
 	return players
 }
 

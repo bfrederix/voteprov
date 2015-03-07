@@ -2,6 +2,7 @@ package api
 
 
 import (
+	"fmt"
     "time"
 	"appengine/datastore"
 )
@@ -11,6 +12,12 @@ type Player struct {
 	PhotoFilename string    `datastore:"photo_filename,noindex" json:"photo_filename"`
 	Star          bool      `datastore:"star" json:"star"`
 	DateAdded     time.Time `datastore:"date_added" json:"date_added"`
+	IMGPath       string    `json:"img_path"`
+}
+
+
+func (p *Player) SetProperties() {
+    p.IMGPath = fmt.Sprintf("/static/img/players/%s", p.PhotoFilename)
 }
 
 
@@ -129,13 +136,20 @@ type Medal struct {
 
 
 type LeaderboardEntry struct {
-	Show     *datastore.Key   `datastore:"show" json:"show"`
-	ShowDate time.Time        `datastore:"show_date" json:"show_date"`
-	UserID   string           `datastore:"user_id" json:"user_id"`
-	Points   int64            `datastore:"points" json:"points"`
-	Wins     int64            `datastore:"wins" json:"wins"`
-	Medals   []*datastore.Key `datastore:"medals" json:"medals"`
+	Show        *datastore.Key   `datastore:"show" json:"show"`
+	ShowDate    time.Time        `datastore:"show_date" json:"show_date"`
+	UserID      string           `datastore:"user_id" json:"user_id"`
+	Points      int64            `datastore:"points" json:"points"`
+	Wins        int64            `datastore:"wins" json:"wins"`
+	Medals      []*datastore.Key `datastore:"medals" json:"medals"`
+	Username    string           `json:"username"`
+	Suggestions int              `json:"suggestions"`
 }
+
+
+//func (le *LeaderboardEntry) SetProperties() {
+//    le.Username = fmt.Sprintf("/static/img/players/%s", p.PhotoFilename)
+//}
 
 
 type UserProfile struct {
