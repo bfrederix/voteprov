@@ -41,6 +41,8 @@ config = {'webapp2_extras.sessions': {
 
 
 app = webapp2.WSGIApplication([
+    # Task Queues
+    (r'/live_vote_worker/', LiveVoteWorker),
 	# Basic Web Views
 	(r'/robots.txt', RobotsTXT),
 	(r'/loaderio-9b6fa50492da1609dc61b9198b767688.txt', LoaderIO),
@@ -75,8 +77,6 @@ app = webapp2.WSGIApplication([
     (r'/upvote_json/([a-zA-Z\-]+)/',UpvoteJSON),
     (r'/session_logout/', SessionLogout),
     (r'/fb_login/', FacebookLogin),
-    # Task Queues
-    (r'/live_vote_worker/', LiveVoteWorker),
 ],
   config=config,
   debug=True)
