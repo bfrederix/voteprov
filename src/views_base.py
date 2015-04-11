@@ -250,6 +250,7 @@ class ViewBase(webapp2.RequestHandler):
                 'js_path': app.registry.get('js'),
                 'audio_path': app.registry.get('audio'),
                 'player_image_path': app.registry.get('player_images'),
+                'debug': app.registry.get('debug'),
                 'is_admin': users.is_current_user_admin(),
                 'user': self.user,
                 'username': self.username,

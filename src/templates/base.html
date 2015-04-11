@@ -13,6 +13,23 @@
   	
   	<script src="{{js_path}}jquery-1.11.0.min.js"></script>
   	<script src="{{js_path}}bootstrap.min.js"></script>
+    <script>
+        (function() {
+          var _fbq = window._fbq || (window._fbq = []);
+          if (!_fbq.loaded) {
+            var fbds = document.createElement('script');
+            fbds.async = true;
+            fbds.src = '//connect.facebook.net/en_US/fbds.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(fbds, s);
+            _fbq.loaded = true;
+          }
+          _fbq.push(['addPixelId', '462251553928338']);
+        })();
+        window._fbq = window._fbq || [];
+        window._fbq.push(['track', 'PixelInitialized', {}]);
+    </script>
+    <noscript><img height="1" width="1" alt="" style="display:none" src="https://www.facebook.com/tr?id=462251553928338&amp;ev=PixelInitialized" /></noscript>
   	<script>
         $( document ).ready(function() {
             $('#Logout').click(function() {
@@ -29,7 +46,7 @@
     </script>
   	
   	{% block add_head %}{% endblock %}
-  	<title>{% block title %}Adventure-prov{% endblock %}</title>
+  	<title>{% block title %}Adventure-prov {% if debug %}dev{% endif %}{% endblock %}</title>
   </head>
 
   <body>

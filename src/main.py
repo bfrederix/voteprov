@@ -81,6 +81,7 @@ app = webapp2.WSGIApplication([
   config=config,
   debug=True)
 
+app.registry['debug'] = os.environ['SERVER_SOFTWARE'].startswith('Development')
 
 app.registry['templates'] = os.path.join(os.path.dirname(__file__),
 										 'templates/')
