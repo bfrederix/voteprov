@@ -340,20 +340,8 @@ class UserAccount(ViewBase):
         # IF a duplicate user profile was created, delete it!!
         if len(user_profiles) > 1:
             user_profiles[1].key.delete()
-        user_suggestions = fetch_suggestions(user_id=user_id)
-        show_entries = fetch_leaderboard_entries(user_id=user_id,
-                                                 order_by_show_date=True)
-        try:
-            leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
-                                                          unique_by_user=True)[0]
-        except IndexError:
-            leaderboard_stats = {'level': 1, 'points': 0, 'medals': [], 'wins': 0,
-                                 'suggestions': 0}
 
-        context = {'show_entries': show_entries,
-                   'user_suggestions': user_suggestions,
-                   'leaderboard_stats': leaderboard_stats,
-                   'user_profile': user_profile,
+        context = {'user_profile': user_profile,
                    'page_user_id': user_id}
         self.response.out.write(template.render(self.path('user_account.html'),
                                                 self.add_context(context)))
@@ -372,17 +360,7 @@ class UserAccount(ViewBase):
                 user_profile = get_user_profile(user_id=user_id)
             else:
                 update = 'changed'
-        show_entries = fetch_leaderboard_entries(user_id=user_id,
-                                                 order_by_show_date=True)
-        try:
-            leaderboard_stats = fetch_leaderboard_entries(user_id=user_id,
-                                                          unique_by_user=True)[0]
-        except IndexError:
-            leaderboard_stats = {'level': 1, 'points': 0, 'medals': [], 'wins': 0,
-                                 'suggestions': 0}
-        context = {'show_entries': show_entries,
-                   'leaderboard_stats': leaderboard_stats,
-                   'user_profile': user_profile,
+        context = {'user_profile': user_profile,
                    'page_user_id': user_id,
                    'update': update}
         self.response.out.write(template.render(self.path('user_account.html'),

@@ -10,7 +10,14 @@
 	<link rel="apple-touch-icon" href="apple-touch-icon.png">
 	<link href="{{css_path}}bootstrap.min.css" rel="stylesheet" media="screen">
   	<link rel="stylesheet" type="text/css" href="{{css_path}}base.css">
-  	
+
+    {% if debug %}
+      <script src="{{js_path}}react-with-addons-0.13.1.js"></script>
+    {% else %}
+      <script src="{{.DC.JSPath}}react-with-addons-0.13.1.min.js"></script>
+    {% endif %}
+    <script src="{{js_path}}JSXTransformer-0.13.1.js"></script>
+    <script src="{{js_path}}date.js"></script>
   	<script src="{{js_path}}jquery-1.11.0.min.js"></script>
   	<script src="{{js_path}}bootstrap.min.js"></script>
     <script>

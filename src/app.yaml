@@ -4,8 +4,8 @@ runtime: python27
 api_version: 1
 threadsafe: true
 
-#builtins:
-#- remote_api: on
+builtins:
+- remote_api: on
 
 handlers:
 - url: /favicon\.ico
@@ -18,9 +18,9 @@ handlers:
 - url: /static
   static_dir: static
 
-#- url: /localhost:8088/_ah/remote_api
-#  script: google.appengine.ext.remote_api.handler.app
-#  login: admin
+- url: /localhost:8080/_ah/remote_api
+  script: google.appengine.ext.remote_api.handler.app
+  login: admin
 
 - url: .*
   script: main.app

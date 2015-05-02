@@ -83,6 +83,9 @@ app = webapp2.WSGIApplication([
 
 app.registry['debug'] = os.environ['SERVER_SOFTWARE'].startswith('Development')
 
+if app.registry['debug']:
+    app.registry['api_url'] = 'http://'
+
 app.registry['templates'] = os.path.join(os.path.dirname(__file__),
 										 'templates/')
 app.registry['images'] = os.path.join(os.path.dirname(__file__),
