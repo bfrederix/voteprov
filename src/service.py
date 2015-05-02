@@ -479,7 +479,12 @@ def pre_show_voting_post(show_key, suggestion_pool, request, session_id, user_id
 
 def get_current_suggestion_pools(current_show):
     if current_show:
-        suggestion_pools = fetch_suggestion_pools(occurs='during')
+        pools = []
+        for vt in current_show.vote_types:
+            vote_type = vt.get()
+            if vote_type.occurs == 'during' and vote_type.name != 'test':
+                pools.append(vote_type.suggestion_pool.get())
+        return pools
     else:
         # Fetch before show creation pools
         suggestion_pools = fetch_suggestion_pools(occurs='before')
